@@ -298,3 +298,58 @@ if [[ -z ${!genome_index_path} ]]; then
 fi
 logger_debug "[Genome index path] ${genome_index_path}=${!genome_index_path}"
 
+### SET GENOME SAMTOOLS INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
+
+declare -r genome_samtools_path=$(toupper ${NAMESPACE}_paths)_SAMTOOLS_INDEXES
+if [[ -z ${!genome_samtools_path} ]]; then
+    logger_fatal "An error occured while setting genome samtools indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_samtools_path}=${!genome_samtools_path}"
+
+#### reference
+declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias )_ref
+if [[ -z ${!ga_ref} ]]; then
+    logger_fatal "An error occured while setting genome alias variable for reference genome."
+    exit 1
+fi
+logger_debug "[Genome alias] ${ga_ref}=${!ga_ref}"
+
+eval "$(toupper ${NAMESPACE}_paths)_ref_samtools_index=${!genome_index_path}/${!genome_samtools_path}/$(get_tool_version samtools)/${!ga_ref}/${!ga_ref}"
+declare -r ref_samtools_index_path=$(toupper ${NAMESPACE}_paths)_ref_samtools_index
+if [[ ! -s ${!ref_samtools_index_path} ]]; then
+    logger_fatal "An error occured while setting genome samtools index path for reference genome."
+    exit 1
+fi
+IDX_FILES=($(ls ${!ref_samtools_index_path}*))
+if [[ ${#IDX_FILES[@]} -le 0 ]]; then
+    logger_fatal "An error occured while checking genome samtools index files for the reference genome."
+    exit 1
+fi
+logger_info "[Genome samtools index path] ${ref_samtools_index_path}=${!ref_samtools_index_path}"
+
+# call reference directly
+#eval echo -e \$"$(toupper ${NAMESPACE}_paths)_ref_fasta"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
