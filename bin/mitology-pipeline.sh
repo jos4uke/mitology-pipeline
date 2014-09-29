@@ -166,6 +166,11 @@ if [[ ! -s $CONFIGFILE ]]; then
     exit 1;
 fi
 
+if [[ -z $OUTPUT_DIR ]]; then
+	logger_fatal "Output directory must be not null. See Usage with --help option.";
+	exit 1;
+fi
+
 #################
 # PIPELINE STEPS
 #################
