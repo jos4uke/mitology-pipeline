@@ -166,7 +166,53 @@ if [[ ! -s $CONFIGFILE ]]; then
     exit 1;
 fi
 
+#################
+# PIPELINE STEPS
+#################
 
+# CREATE OUTPUT DIR
+# LOAD CONFIG
+# SET GENOME PATH AND INDEXES
+# K-MER ABUNDANCE FILTERING
+# ASSEMBLY
+# DOT PLOT AGAINST REFERENCE GENOME
+# INTERNAL CONSISTENCY: MAPPING READS AGAINST REFERENCE GENOME + FILTERING
+# CLEANING
+
+#===================
+# OUTPUT DIRECTORY
+#===================
+
+echo "Start running $NAMESPACE pipeline (version: $VERSION)." | tee $ERROR_TMP 2>&1 | logger_info
+echo "Executed command: $0 $*" | tee -a $ERROR_TMP 2>&1 | logger_info
+
+#
+# Create a directory named with OUTPUT_DIR value, to save all outputs
+#
+echo "Creating $OUTPUT_DIR directory ..." | tee -a $ERROR_TMP 2>&1 | logger_info
+if [[ -d $OUTPUT_DIR ]]; then
+    echo "OK $OUTPUT_DIR directory already exists. Will output all output files in this directory." | tee -a $ERROR_TMP 2>&1  | logger_info
+else
+    mkdir $OUTPUT_DIR 2>>$ERROR_TMP
+    rtrn=$?
+    out_dir_failed_msg="[Output directory] Failed. Output directory, $OUTPUT_DIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    echo "$(date '+%Y-%m-%d %T') [Output directory] OK $OUTPUT_DIR directory was created successfully. Will output all output files in this directory." | tee -a $ERROR_TMP 2>&1 | logger_info
+fi
+
+# Create log directory
+echo "Creating $LOG_DIR directory ..." | tee -a $ERROR_TMP 2>&1 | logger_info
+if [[ -d $OUTPUT_DIR/$LOG_DIR ]]; then
+    echo "OK $OUTPUT_DIR/$LOG_DIR directory already exists. Will write log files in this directory." | tee -a $ERROR_TMP 2>&1 | logger_info
+else
+    mkdir $OUTPUT_DIR/$LOG_DIR 2>>$ERROR_TMP
+    rtrn=$?
+    log_dir_failed_msg="[Log directory] Failed Log directory, $OUTPUT_DIR/$LOG_DIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$log_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$log_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    echo "$(date '+%Y-%m-%d %T') [Log directory] OK $OUTPUT_DIR/$LOG_DIR directory was created sucessfully. Will write log files in this directory." | tee -a $ERROR_TMP 2>&1 | logger_info
+fi
 
 
 
