@@ -247,7 +247,7 @@ rtrn=$?
 cp_user_config_failed_msg="[Check config: session user config file] Failed backuping session user config file into session directory."
 [[ "$rtrn" -ne 0 ]] && logger_fatal "$cp_user_config_failed_msg"
 exit_on_error "$ERROR_TMP" "$cp_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-logger_info "[Check config: session user config file] Will use backuped session user config file: $BACKUPED_CONFIG_FILE" | tee -a $LOG_DIR/$LOGFILE 2>&1
+logger_info "[Check config: session user config file] Will use backuped session user config file: $BACKUPED_CONFIG_FILE" | tee -a $LOG_DIR/$DEBUGFILE 2>&1
 
 # 2. Load config parameters from backuped session user config file
 logger_info "[Check config: session user config file] Loading session user config parameters from $BACKUPED_CONFIG_FILE file ..."
