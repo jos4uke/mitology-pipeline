@@ -64,24 +64,34 @@ WAITALL_TIMEOUT=259200
 WAITALL_INTERVAL=60
 WAITALL_DELAY=60
 
+### LOGGING CONFIGURATION ###
 
+# load log4sh (disabling properties file warning) and clear the default
+# configuration
+LOG4SH_CONFIGURATION='none' . /usr/local/share/log4sh/build/log4sh 2>/dev/null
+[[ $? != 0 ]] && $(echo "Error loading log4sh lib" >&2; exit 1)
+log4sh_resetConfiguration
 
+# set the global logging level
+logger_setLevel DEBUG
 
+# add and configure a FileAppender that outputs to STDERR
+logger_addAppender stderr
+appender_setType stderr FileAppender
+appender_file_setFile stderr STDERR
+appender_setLevel stderr FATAL
+appender_setLayout stderr PatternLayout
+appender_setPattern stderr '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions stderr
+appender_exists stderr && logger_debug "Standard error appender is enabled." || logger_warn "Standard error appender was not enabled. Maybe a log4sh error occured."
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# add and configure console appender that outputs to standard output
+logger_addAppender console
+appender_setType console ConsoleAppender
+appender_setLevel console INFO
+appender_setLayout console PatternLayout
+appender_setPattern console '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions console
+appender_exists console && logger_debug "Console appender is enabled." || logger_warn "Console appender was not enabled. Maybe a log4sh error occured."
 
 
