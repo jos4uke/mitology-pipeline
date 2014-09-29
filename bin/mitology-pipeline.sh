@@ -106,4 +106,83 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+### USAGE ###
+Usage()
+{
+printf %s "\
+Program: $(basename $0)
+Version: $VERSION
+
+Copyright 2014 Joseph Tran <Joseph.Tran@versailles.inra.fr> & Delphine Charif <Delphine.Charif@versailles.inra.fr>
+
+Licensed under the CeCILL License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+
+Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR]
+
+Options:
+-c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
+                                        You can get a copy there: $PIPELINE_USER_CONFIG.
+-C|--kmer_abund_cutoff INT				The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) corresponding to errors and contaminants. This value overrides the one given in the CONFIG_FILE. 
+-o|--out_dir OUTPUT_DIR                 The output directory.
+-d|--debug                              Enable debugging mode in the console.
+-e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
+-h|--help                               Displays this message.
+
+"
+}
+
+### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
+# separately;
+CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,kmer_abund_cutoff:,out_dir:,debug,email_address: \
+    -n 'mitology-pipeline.sh' -- "$@"`
+
+if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
+
+# Note the quotes around `$CONFIGURE_OPTS'
+eval set -- "$CONFIGURE_OPTS"
+
+while true; do
+    case "$1" in
+        -h | --help ) Usage >&2; exit 1;;
+        -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
+		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
+        -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
+        -d | --debug )
+                    appender_setLevel console DEBUG;
+                    appender_activateOptions console;
+                    shift 1 ;;
+        -e | --email_address ) EMAIL="$2"; shift 2 ;;
+        -- ) shift; break ;;
+        * ) break ;;
+    esac
+done
+
+### VALIDATION ###
+if [[ ! -s $CONFIGFILE ]]; then
+    logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
+    exit 1;
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
