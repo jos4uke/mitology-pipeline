@@ -173,6 +173,7 @@ fi
 
 # CREATE OUTPUT DIR
 # LOAD CONFIG
+# OVERRIDE CONFIG
 # SET GENOME PATH AND INDEXES
 # CHECKING SAMPLE
 # K-MER ABUNDANCE FILTERING
@@ -276,6 +277,33 @@ for cfg in $(get_config_sections $BACKUPED_CONFIG_FILE 2>$ERROR_TMP;); do
     exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
 done
 logger_info "[Check config: session user config file] OK Session user config file, $BACKUPED_CONFIG_FILE, was loaded successfully."
+
+#=================
+# OVERRIDE CONFIG
+#=================
+
+logger_info "[Override config] checking for options to override loaded config parameters ..."
+
+### khmer filter abund cutoff
+declare -r khmer_filter_abund_cutoff=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
+if [[ -z ${!khmer_filter_abund_cutoff} ]]; then
+	logger_warn "[Override config] Config khmer filter abundance cutoff variable, ${khmer_filter_abund_cutoff}, is null. Search for option to override ..."
+	if [[ -z $KMER_ABUND_CUTOFF ]]; then
+		logger_fatal "[Override config] Khmer abundance cutoff option value is null. Please fill in a cutoff value in config file or on the command line, see usage with --help option."
+		exit 1
+	else
+		eval "$(toupper ${NAMESPACE}_khmer_filter_abund)_C=${KMER_ABUND_CUTOFF}"
+		logger_info "[Override config] Overrides config khmer filter abundance cutoff value, NULL, by ${!khmer_filter_abund_cutoff}"
+	fi
+else
+	if [[ -n $KMER_ABUND_CUTOFF ]]; then
+		cutoff_old=${!khmer_filter_abund_cutoff}
+		eval "$(toupper ${NAMESPACE}_khmer_filter_abund)_C=${KMER_ABUND_CUTOFF}"
+		logger_info "[Override config] Overrides config khmer filter abundance cutoff value, $cutoff_old, by ${!khmer_filter_abund_cutoff}"
+	else
+		logger_info "[Override config] Not overriding the config khmer filter abundance cutoff value, ${!khmer_filter_abund_cutoff}."
+	fi
+fi
 
 #=============================================
 # REFERENCE GENOME SEQUENCE AND INDEXES PATHS
