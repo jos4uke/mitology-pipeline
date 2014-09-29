@@ -275,6 +275,101 @@ for cfg in $(get_config_sections $BACKUPED_CONFIG_FILE 2>$ERROR_TMP;); do
 done
 logger_info "[Check config: session user config file] OK Session user config file, $BACKUPED_CONFIG_FILE, was loaded successfully."
 
+#=============================================
+# REFERENCE GENOME SEQUENCE AND INDEXES PATHS
+#=============================================
+
+logger_info "[Genome sequences and index paths] set path variables ..."
+
+### set refrence genome sequence base path
+declare -r genome_base_path=$(toupper ${NAMESPACE}_paths)_GENOMES_BASE_PATH
+
+if [[ -z ${!genome_base_path} && ! -d ${!genome_base_path} ]]; then
+    logger_fatal "An error occured while setting genome base path variable."
+    exit 1
+fi
+logger_debug "[Genome base path] ${genome_base_path}=${!genome_base_path}"
+
+### set refrence genome indexes base path
+declare -r genome_index_path=$(toupper ${NAMESPACE}_paths)_INDEXES_BASE_PATH
+if [[ -z ${!genome_index_path} ]]; then
+    logger_fatal "An error occured while setting genome indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_index_path}=${!genome_index_path}"
+
+#### reference
+declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias )_ref
+if [[ -z ${!ga_ref} ]]; then
+    logger_fatal "An error occured while setting genome alias variable for reference genome."
+    exit 1
+fi
+logger_debug "[Genome alias] ${ga_ref}=${!ga_ref}"
+
+### SET GENOME SAMTOOLS INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
+
+declare -r genome_samtools_path=$(toupper ${NAMESPACE}_paths)_SAMTOOLS_INDEXES
+if [[ -z ${!genome_samtools_path} ]]; then
+    logger_fatal "An error occured while setting genome samtools indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_samtools_path}=${!genome_samtools_path}"
+
+eval "$(toupper ${NAMESPACE}_paths)_ref_samtools_index=${!genome_index_path}/${!genome_samtools_path}/$(get_tool_version samtools)/${!ga_ref}/${!ga_ref}"
+declare -r ref_samtools_index_path=$(toupper ${NAMESPACE}_paths)_ref_samtools_index
+if [[ ! -s ${!ref_samtools_index_path} ]]; then
+    logger_fatal "An error occured while setting genome samtools index path for reference genome."
+    exit 1
+fi
+IDX_FILES=($(ls ${!ref_samtools_index_path}*))
+if [[ ${#IDX_FILES[@]} -le 0 ]]; then
+    logger_fatal "An error occured while checking genome samtools index files for the reference genome."
+    exit 1
+fi
+logger_info "[Genome samtools index path] ${ref_samtools_index_path}=${!ref_samtools_index_path}"
+
+### SET GENOME BWA INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
+
+#### set current tool version index for the reference genome
+declare -r genome_bwa_path=$(toupper ${NAMESPACE}_paths)_BWA_INDEXES
+if [[ -z ${!genome_bwa_path} ]]; then
+    logger_fatal "An error occured while setting genome bwa indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_bwa_path}=${!genome_bwa_path}"
+
+eval "$(toupper ${NAMESPACE}_paths)_ref_bwa_index=${!genome_index_path}/${!genome_bwa_path}/$(get_tool_version bwa)/${!ga_ref}/${!ga_ref}"
+declare -r ref_bwa_index_path=$(toupper ${NAMESPACE}_paths)_ref_bwa_index
+if [[ -z ${!ref_bwa_index_path} ]]; then
+    logger_fatal "An error occured while setting genome bwa index path variable for the ref genome."
+    exit 1
+fi
+IDX_FILES=($(ls ${!ref_bwa_index_path}*))
+if [[ ${#IDX_FILES[@]} -le 0 ]]; then
+    logger_fatal "An error occured while checking genome bwa index files for the ref genome."
+    exit 1
+fi
+logger_info "[Genome index path] ${ref_bwa_index_path}=${!ref_bwa_index_path}"
+
+# call directly
+#eval echo -e \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index"
+# test
+#eval ls -lh \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index*"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
