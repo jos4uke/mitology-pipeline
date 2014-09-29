@@ -275,8 +275,26 @@ for cfg in $(get_config_sections $BACKUPED_CONFIG_FILE 2>$ERROR_TMP;); do
 done
 logger_info "[Check config: session user config file] OK Session user config file, $BACKUPED_CONFIG_FILE, was loaded successfully."
 
+#=============================================
+# REFERENCE GENOME SEQUENCE AND INDEXES PATHS
+#=============================================
 
+logger_info "[Genome sequences and index paths] set path variables ..."
 
+### set refrence genome sequence base path
+declare -r genome_base_path=$(toupper ${NAMESPACE}_paths)_GENOMES_BASE_PATH
 
+if [[ -z ${!genome_base_path} && ! -d ${!genome_base_path} ]]; then
+    logger_fatal "An error occured while setting genome base path variable."
+    exit 1
+fi
+logger_debug "[Genome base path] ${genome_base_path}=${!genome_base_path}"
 
+### set refrence genome indexes base path
+declare -r genome_index_path=$(toupper ${NAMESPACE}_paths)_INDEXES_BASE_PATH
+if [[ -z ${!genome_index_path} ]]; then
+    logger_fatal "An error occured while setting genome indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_index_path}=${!genome_index_path}"
 
