@@ -73,8 +73,6 @@ LOG4SH_CONFIGURATION='none' . /usr/local/share/log4sh/build/log4sh 2>/dev/null
 log4sh_resetConfiguration
 
 # set the global logging level
-logger_setLevel DEBUG
-
 # add and configure a FileAppender that outputs to STDERR
 logger_addAppender stderr
 appender_setType stderr FileAppender
@@ -83,8 +81,6 @@ appender_setLevel stderr FATAL
 appender_setLayout stderr PatternLayout
 appender_setPattern stderr '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
 appender_activateOptions stderr
-appender_exists stderr && logger_debug "Standard error appender is enabled." || logger_warn "Standard error appender was not enabled. Maybe a log4sh error occured."
-
 # add and configure console appender that outputs to standard output
 logger_addAppender console
 appender_setType console ConsoleAppender
@@ -178,6 +174,7 @@ fi
 # CREATE OUTPUT DIR
 # LOAD CONFIG
 # SET GENOME PATH AND INDEXES
+# CHECKING SAMPLE
 # K-MER ABUNDANCE FILTERING
 # ASSEMBLY
 # DOT PLOT AGAINST REFERENCE GENOME
@@ -360,6 +357,65 @@ logger_info "[Genome index path] ${ref_bwa_index_path}=${!ref_bwa_index_path}"
 #eval echo -e \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index"
 # test
 #eval ls -lh \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index*"
+
+#=================
+# CHECKING SAMPLE
+#=================
+
+declare -r current_sample_alias=$(toupper ${NAMESPACE}_sample)_name_alias
+declare -r current_sample_seq_dir=$(toupper ${NAMESPACE}_sample)_seqfile_parent_dir
+
+# check if seq dir exists
+if [[ ! -d ${!current_sample_seq_dir} ]]; then
+	logger_fatal "[Checking sample] Sample directory, ${!current_sample_seq_dir}, does not exist. Please check the sample directory path."
+	exit 1
+fi
+logger_info "[Checking sample] Sample directory, ${!current_sample_seq_dir}, exists."
+
+# check if all seq files exist
+declare -r current_sample_seq_R1=$(toupper ${NAMESPACE}_sample)_seqfile_R1
+eval "$(toupper ${NAMESPACE}_sample)_seqfile_R1_path=${!current_sample_seq_dir}/${!current_sample_seq_R1}"
+declare -r current_sample_seq_R1_path=$(toupper ${NAMESPACE}_sample)_seqfile_R1_path
+
+declare -r current_sample_seq_R2=$(toupper ${NAMESPACE}_sample)_seqfile_R2
+eval "$(toupper ${NAMESPACE}_sample)_seqfile_R2_path=${!current_sample_seq_dir}/${!current_sample_seq_R2}"
+declare -r current_sample_seq_R2_path=$(toupper ${NAMESPACE}_sample)_seqfile_R2_path
+
+if [[ ! -s "${!current_sample_seq_R1_path}" ]]; then
+	logger_fatal "[Checking sample] Sample R1 seq file, ${!current_sample_seq_R1}, does not exist or is empty."
+	exit 1
+fi	
+logger_info "[Checking sample] Sample R1 seq file, ${!current_sample_seq_R1}, exists."
+
+if [[ ! -s "${!current_sample_seq_R2_path}" ]]; then
+	logger_fatal "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, does not exist or is empty."
+	exit 1
+fi
+logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, exists."
+
+
+
+
+#=====
+# END
+#=====
+
+logger_info "[End] Run successfully the pipeline."
+logger_info "[End] Will exit now."
+
+# close all appenders
+appender_exists stderr && appender_close stderr
+appender_exists console && appender_close console
+appender_exists debuggerF && appender_close debuggerF
+
+exit 0
+
+
+
+
+
+
+
 
 
 
