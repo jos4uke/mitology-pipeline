@@ -228,3 +228,55 @@ appender_activateOptions debuggerF
 appender_exists debuggerF && cat $ERROR_TMP | logger_info
 appender_exists debuggerF && logger_info "Debugging infos will be output to $OUTPUT_DIR/$LOG_DIR/$DEBUGFILE file." || logger_warn "The debugger file appender was not enabled. Maybe a log4sh error occured."
 
+#=============
+# LOAD CONFIG
+#=============
+
+# set backup config file variable
+BACKUPED_CONFIG_FILE=$OUTPUT_DIR/$(basename $CONFIGFILE)
+
+# 1. Backup session user config file in session dir if not exist
+logger_info "[Check config: session user config file] Backuping session user config file into session directory ..."
+cp $CONFIGFILE $OUTPUT_DIR/. 2>$ERROR_TMP
+rtrn=$?
+cp_user_config_failed_msg="[Check config: session user config file] Failed backuping session user config file into session directory."
+[[ "$rtrn" -ne 0 ]] && logger_fatal "$cp_user_config_failed_msg"
+exit_on_error "$ERROR_TMP" "$cp_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+logger_info "[Check config: session user config file] Will use backuped session user config file: $BACKUPED_CONFIG_FILE" | tee -a $LOG_DIR/$LOGFILE 2>&1
+
+# 2. Load config parameters from backuped session user config file
+logger_info "[Check config: session user config file] Loading session user config parameters from $BACKUPED_CONFIG_FILE file ..."
+load_user_config_failed_msg="[Check config: session user config file] Failed loading session user config parameters from $BACKUPED_CONFIG_FILE file."
+for cfg in $(get_config_sections $BACKUPED_CONFIG_FILE 2>$ERROR_TMP;); do
+    rtrn=$?
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
+    exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+    logger_debug "--- Config section [${cfg}] ---"
+    unset $(set |awk -F= -v cfg="${cfg}" -v prefix="${NAMESPACE}" 'BEGIN {
+          cfg = toupper(cfg);
+          prefix = toupper(prefix);
+          pattern = "\^" prefix "_" cfg "_"
+       }
+       $0~pattern { print $1 }' 2>$ERROR_TMP ) 2>>$ERROR_TMP
+    rtrn=$?
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
+    exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+    CONFIG_PARAMS=$(format_config_params $BACKUPED_CONFIG_FILE ${cfg} ${NAMESPACE} 2>$ERROR_TMP)
+    eval "${CONFIG_PARAMS}"
+    rtrn=$?
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
+    exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+    for params in $(set | grep ^$(toupper ${NAMESPACE}_${cfg}_) 2>$ERROR_TMP); do
+        logger_debug "$params"
+    done
+    rtrn=$?
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
+    exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+logger_info "[Check config: session user config file] OK Session user config file, $BACKUPED_CONFIG_FILE, was loaded successfully."
+
+
+
+
+
+
