@@ -94,4 +94,16 @@ appender_setPattern console '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
 appender_activateOptions console
 appender_exists console && logger_debug "Console appender is enabled." || logger_warn "Console appender was not enabled. Maybe a log4sh error occured."
 
+### LOAD LIB ###
+
+# bash-common lib
+[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../../bash-common/share/bash-common/lib/bash-common_lib.inc || LIB_PATH=/usr/local/share/bash-common/lib/bash-common_lib.inc
+
+logger_debug "[Library] Loading $LIB_PATH"
+. $LIB_PATH
+if [[ $? -ne 0 ]]; then
+	logger_fatal "Error loading bash common lib: $LIB_PATH"
+	exit 1
+fi
+
 
