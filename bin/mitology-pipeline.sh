@@ -298,6 +298,14 @@ if [[ -z ${!genome_index_path} ]]; then
 fi
 logger_debug "[Genome index path] ${genome_index_path}=${!genome_index_path}"
 
+#### reference
+declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias )_ref
+if [[ -z ${!ga_ref} ]]; then
+    logger_fatal "An error occured while setting genome alias variable for reference genome."
+    exit 1
+fi
+logger_debug "[Genome alias] ${ga_ref}=${!ga_ref}"
+
 ### SET GENOME SAMTOOLS INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
 
 declare -r genome_samtools_path=$(toupper ${NAMESPACE}_paths)_SAMTOOLS_INDEXES
@@ -306,14 +314,6 @@ if [[ -z ${!genome_samtools_path} ]]; then
     exit 1
 fi
 logger_debug "[Genome index path] ${genome_samtools_path}=${!genome_samtools_path}"
-
-#### reference
-declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias )_ref
-if [[ -z ${!ga_ref} ]]; then
-    logger_fatal "An error occured while setting genome alias variable for reference genome."
-    exit 1
-fi
-logger_debug "[Genome alias] ${ga_ref}=${!ga_ref}"
 
 eval "$(toupper ${NAMESPACE}_paths)_ref_samtools_index=${!genome_index_path}/${!genome_samtools_path}/$(get_tool_version samtools)/${!ga_ref}/${!ga_ref}"
 declare -r ref_samtools_index_path=$(toupper ${NAMESPACE}_paths)_ref_samtools_index
@@ -328,11 +328,33 @@ if [[ ${#IDX_FILES[@]} -le 0 ]]; then
 fi
 logger_info "[Genome samtools index path] ${ref_samtools_index_path}=${!ref_samtools_index_path}"
 
-# call reference directly
-#eval echo -e \$"$(toupper ${NAMESPACE}_paths)_ref_fasta"
+### SET GENOME BWA INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
 
+#### set current tool version index for the reference genome
+declare -r genome_bwa_path=$(toupper ${NAMESPACE}_paths)_BWA_INDEXES
+if [[ -z ${!genome_bwa_path} ]]; then
+    logger_fatal "An error occured while setting genome bwa indexes path variable."
+    exit 1
+fi
+logger_debug "[Genome index path] ${genome_bwa_path}=${!genome_bwa_path}"
 
+eval "$(toupper ${NAMESPACE}_paths)_ref_bwa_index=${!genome_index_path}/${!genome_bwa_path}/$(get_tool_version bwa)/${!ga_ref}/${!ga_ref}"
+declare -r ref_bwa_index_path=$(toupper ${NAMESPACE}_paths)_ref_bwa_index
+if [[ -z ${!ref_bwa_index_path} ]]; then
+    logger_fatal "An error occured while setting genome bwa index path variable for the ref genome."
+    exit 1
+fi
+IDX_FILES=($(ls ${!ref_bwa_index_path}*))
+if [[ ${#IDX_FILES[@]} -le 0 ]]; then
+    logger_fatal "An error occured while checking genome bwa index files for the ref genome."
+    exit 1
+fi
+logger_info "[Genome index path] ${ref_bwa_index_path}=${!ref_bwa_index_path}"
 
+# call directly
+#eval echo -e \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index"
+# test
+#eval ls -lh \$"$(toupper ${NAMESPACE}_paths)_ref_bwa_index*"
 
 
 
