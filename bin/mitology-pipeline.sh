@@ -440,7 +440,7 @@ logger_info "Creating $KMER_FILTER_ABUND_OUTDIR directory ..."
 if [[ -d $KMER_FILTER_ABUND_OUTDIR ]]; then
     logger_debug"OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
 else
-    mkdir $KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
+    mkdir $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
     rtrn=$?
     out_dir_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed. K-mer abundance filtering output directory, $KMER_FILTER_ABUND_OUTDIR, was not created."
     [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
@@ -448,10 +448,68 @@ else
     logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $KMER_FILTER_ABUND_OUTDIR directory was created successfully. Will output all k-mer abundance filtering output files in this directory."
 fi
 
+### Enable the k-mer abundance filtering debug logger
+KMER_FILTER_ABUND_DEBUGF=${KMER_FILTER_ABUND_OUTDIR}_debug.log
+logger_addAppender kmerFiltAbundF
+appender_setType kmerFiltAbundF FileAppender
+appender_file_setFile kmerFiltAbundF $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF
+appender_setLevel kmerFiltAbundF DEBUG
+appender_setLayout kmerFiltAbundF PatternLayout
+appender_setPattern kmerFiltAbundF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions kmerFiltAbundF
+appender_exists kmerFiltAbundF && logger_info "[$KMER_FILTER_ABUND_OUTDIR] Debugging infos on k-mer abundance filtering will be output to $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF file." || logger_warn "The kmerFiltAbundF debugger file appender was not enabled. Maybe a log4sh error occured."
+### error handling
+KMER_FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${KMER_FILTER_ABUND_OUTDIR}.err
+
+#
+# Interleave reads
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
+INTERLEAVED_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.err
+
+# build cli
+declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
+eval "$(toupper ${NAMESPACE}_sample)_interleaved_reads=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.fastq"
+declare -r interleaved_reads=$(toupper ${NAMESPACE}_sample)_interleaved_reads
+kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} >${!interleaved_reads} 2>${INTERLEAVED_ERROR} &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
+eval "$kmer_filt_abund_cli" 2>$ERROR_TMP
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
+exit_on_error "$ERROR_TMP" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until interleave reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${ERROR_TMP})"
+    rtrn=$?
+    exit_on_error "$ERROR_TMP" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+if [[ -s ${INTERLEAVED_ERROR} ]] 
+	then logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_interleave_reads}. See ${INTERLEAVED_ERROR} file for more details."
+fi 
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_interleave_reads} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+#
+# Counting k-mers
+#
 
 
 
 
+
+
+### close appender
+appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
 
 #=====
 # END
