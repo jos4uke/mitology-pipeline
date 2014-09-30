@@ -176,10 +176,10 @@ fi
 # OVERRIDE CONFIG
 # SET GENOME PATH AND INDEXES
 # CHECKING SAMPLE
-# K-MER ABUNDANCE FILTERING
-# ASSEMBLY
+# K-MER ABUNDANCE FILTERING: FILTERED READS
+# ASSEMBLY: CONTIGING AND SCAFFOLDING (OPTIONAL)
 # DOT PLOT AGAINST REFERENCE GENOME
-# INTERNAL CONSISTENCY: MAPPING READS AGAINST REFERENCE GENOME + FILTERING
+# INTERNAL CONSISTENCY: MAPPING FILTERED READS AGAINST CONTIGS AND SCAFFOLDS (OPTIONAL)
 # CLEANING
 
 #===================
@@ -420,6 +420,35 @@ if [[ ! -s "${!current_sample_seq_R2_path}" ]]; then
 	exit 1
 fi
 logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, exists."
+
+#===============================
+# 01. K-MER ABUNDANCE FILTERING
+#===============================
+
+# STEPS
+## CREATE OUTPUT DIR
+## INTERLEAVE READS
+## COUNTING KMERS
+## FILTER K-MER ABUNDANCE
+## EXTRACT AND SPLIT PAIRED READS
+
+#
+# Create K-mer abundance filtering output directory
+#
+KMER_FILTER_ABUND_OUTDIR="01.K-mer_filter_abund"
+logger_info "Creating $KMER_FILTER_ABUND_OUTDIR directory ..." 
+if [[ -d $KMER_FILTER_ABUND_OUTDIR ]]; then
+    logger_debug"OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
+else
+    mkdir $KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
+    rtrn=$?
+    out_dir_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed. K-mer abundance filtering output directory, $KMER_FILTER_ABUND_OUTDIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $KMER_FILTER_ABUND_OUTDIR directory was created successfully. Will output all k-mer abundance filtering output files in this directory."
+fi
+
+
 
 
 
