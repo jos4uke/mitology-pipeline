@@ -587,6 +587,76 @@ waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_load_into_counting} processes finished. Will proceed to next step ..."
 PIDS_ARR=()
 
+#
+# Filtering k-mer abundance
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Filtering k-mer abundance ..."
+FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_filter-abund.err
+
+# build cli options
+khmer_filter_abund_opts=($(buildCommandLineOptions "khmer_filter_abund" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
+rtrn=$?
+cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_filter_abund command line options for current sample ${!current_sample_alias}."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+opts="${khmer_filter_abund_opts[@]}"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_filter_abund options: $opts"
+
+# build cli
+declare -r khmer_filter_abund_C=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
+declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}_C${!khmer_filter_abund_C}.abundfilt"
+declare -r khmer_abundfilt=$(toupper ${NAMESPACE}_sample)_abundfilt
+
+khmer_filter_abund_cli="${!khmer_filter_abund} $opts -o ${!khmer_abundfilt} ${!khmer_hash_count} ${DATA} 2>${FILTER_ABUND_ERROR} | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_filter_abund_cli"
+eval "$khmer_filter_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_filter_abund_cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until interleave reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### checking errors at start
+if [[ -s ${FILTER_ABUND_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_filter_abund}. See ${FILTER_ABUND_ERROR} file for more details."
+	if [[ -n $(grep "Error" $FILTER_ABUND_ERROR) ]]; then
+		cat $FILTER_ABUND_ERROR | logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_filter_abund} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_filter_abund} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
