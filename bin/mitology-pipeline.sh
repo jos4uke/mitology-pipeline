@@ -437,7 +437,7 @@ logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, ex
 #
 KMER_FILTER_ABUND_OUTDIR="01.K-mer_filter_abund"
 logger_info "Creating $KMER_FILTER_ABUND_OUTDIR directory ..." 
-if [[ -d $KMER_FILTER_ABUND_OUTDIR ]]; then
+if [[ -d $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR ]]; then
     logger_debug"OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
 else
     mkdir $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
@@ -475,11 +475,11 @@ kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} $
 
 # run cli
 logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
-eval "$kmer_filt_abund_cli" 2>$ERROR_TMP
+eval "$kmer_filt_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
 pid=$!
 rtrn=$?
 eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
-exit_on_error "$ERROR_TMP" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
 
 # add pid to array
 PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
@@ -487,9 +487,9 @@ PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
 # and reinit pid array
 pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
 for p in "${PIDS_ARR[@]}"; do
-    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${ERROR_TMP})"
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
     rtrn=$?
-    exit_on_error "$ERROR_TMP" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
 done
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
 waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
@@ -502,8 +502,74 @@ PIDS_ARR=()
 #
 # Counting k-mers
 #
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Counting k-mers ..."
+COUNTING_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_counting.err
 
+# build cli options
+khmer_load_into_counting_opts=($(buildCommandLineOptions "khmer_load_into_counting" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
+rtrn=$?
+cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_load_into_counting command line options for current sample ${!current_sample_alias}."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+opts="${khmer_load_into_counting_opts[@]}"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $opts"
 
+# build cli
+declare -r khmer_load_into_counting_k=$(toupper ${NAMESPACE}_khmer_load_into_counting)_k
+declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_into_counting
+eval "$(toupper ${NAMESPACE}_sample)_hash_count=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}.hashcount"
+declare -r khmer_hash_count=$(toupper ${NAMESPACE}_sample)_hash_count
+
+khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${!interleaved_reads} 2>${COUNTING_ERROR} | logger_debug &"
+# TODO: no need to interleave reads before counting hash, will save disk space, make interleaving a cli option, --interleaving
+# and make input data=interleaved.fastq or data=[pe1.fq,pe2.fq] if no interleaving enabled
+# the following command works:
+#khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} 2>${COUNTING_ERROR} | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_load_into_counting_cli"
+eval "$khmer_load_into_counting_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_load_into_counting_cli cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until interleave reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### check for potential errors at start
+# khmer version 1.1 / screed version 0.7
+# load-into-counting.py throws "IOError: InvalidFASTQFileFormat: sequence and quality scores length mismatch"
+# Not very informative and not related to fastq format considering this issue (https://github.com/ged-lab/khmer/issues/249)
+# checked input fastq: ok, readlength == qualitylength
+# awk '{if(NR%4==2) print NR"\t"$0"\t"length($0)}' test/01.K-mer_filter_abund/cvi_interleaved.fastq > cvi_readlength.txt
+# awk '{if(NR%4==0) print NR"\t"$0"\t"length($0)}' test/01.K-mer_filter_abund/cvi_interleaved.fastq > cvi_qualitylength.txt
+# awk 'NR==FNR{a[$3]++;next}!a[$3]' cvi_readlength.txt cvi_qualitylength.txt | wc -l # => result: 0
+# Proposed fix: do not use multi-threading with T>1
+# fix works but that's a pitty!
+
+if [[ -s ${COUNTING_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_load_into_counting}. See ${COUNTING_ERROR} file for more details."
+	if [[ -n $(grep "Error" $COUNTING_ERROR) ]]; then
+		cat $COUNTING_ERROR | logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_load_into_counting} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_load_into_counting} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
 
 
 
