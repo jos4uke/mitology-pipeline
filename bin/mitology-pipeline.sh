@@ -116,23 +116,30 @@ you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 
-Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR]
+Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-C|--kmer_abund_cutoff INT] [--interleaving] [-e|--email_address VALID_EMAIL_ADDR]
 
-Options:
+Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
                                         You can get a copy there: $PIPELINE_USER_CONFIG.
 -C|--kmer_abund_cutoff INT				The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) corresponding to errors and contaminants. This value overrides the one given in the CONFIG_FILE. 
 -o|--out_dir OUTPUT_DIR                 The output directory.
+
+Options:
 -d|--debug                              Enable debugging mode in the console.
+--interleaving                          Will interleave input paired end read sequence files before build hash count table. Output: <sample_name>_interleaved.fastq in filtering directory.
 -e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
 -h|--help                               Displays this message.
 
 "
 }
 
+### DEFAULTS
+INTERLEAVING=false
+
+
 ### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately;
-CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,kmer_abund_cutoff:,out_dir:,debug,email_address: \
+CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,out_dir:,kmer_abund_cutoff:,interleaving,debug,email_address: \
     -n 'mitology-pipeline.sh' -- "$@"`
 
 if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
@@ -144,8 +151,9 @@ while true; do
     case "$1" in
         -h | --help ) Usage >&2; exit 1;;
         -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
-		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
+		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
+		--interleaving ) INTERLEAVING=true; shift 1;;
         -d | --debug )
                     appender_setLevel console DEBUG;
                     appender_activateOptions console;
@@ -427,7 +435,7 @@ logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, ex
 
 # STEPS
 ## CREATE OUTPUT DIR
-## INTERLEAVE READS
+## INTERLEAVE READS (OPTIONAL)
 ## COUNTING KMERS
 ## FILTER K-MER ABUNDANCE
 ## EXTRACT AND SPLIT PAIRED READS
@@ -461,43 +469,55 @@ appender_exists kmerFiltAbundF && logger_info "[$KMER_FILTER_ABUND_OUTDIR] Debug
 ### error handling
 KMER_FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${KMER_FILTER_ABUND_OUTDIR}.err
 
-#
-# Interleave reads
-#
-logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
-INTERLEAVED_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.err
+case $INTERLEAVING in
+	(true)
 
-# build cli
-declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
-eval "$(toupper ${NAMESPACE}_sample)_interleaved_reads=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.fastq"
-declare -r interleaved_reads=$(toupper ${NAMESPACE}_sample)_interleaved_reads
-kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} >${!interleaved_reads} 2>${INTERLEAVED_ERROR} &"
+	#
+	# Interleave reads
+	#
+	logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
+	INTERLEAVED_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.err
 
-# run cli
-logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
-eval "$kmer_filt_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
-pid=$!
-rtrn=$?
-eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
-exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+	# build cli
+	declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
+	eval "$(toupper ${NAMESPACE}_sample)_interleaved_reads=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.fastq"
+	declare -r interleaved_reads=$(toupper ${NAMESPACE}_sample)_interleaved_reads
+	kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} >${!interleaved_reads} 2>${INTERLEAVED_ERROR} &"
 
-# add pid to array
-PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-# wait until interleave reads process finish then proceed to next step
-# and reinit pid array
-pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
-for p in "${PIDS_ARR[@]}"; do
-    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
-    rtrn=$?
-    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-done
-logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
-waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-if [[ -s ${INTERLEAVED_ERROR} ]] 
-	then logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_interleave_reads}. See ${INTERLEAVED_ERROR} file for more details."
-fi 
-logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_interleave_reads} processes finished. Will proceed to next step ..."
-PIDS_ARR=()
+	# run cli
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
+	eval "$kmer_filt_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
+	pid=$!
+	rtrn=$?
+	eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
+	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+	# add pid to array
+	PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+	# wait until interleave reads process finish then proceed to next step
+	# and reinit pid array
+	pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+	for p in "${PIDS_ARR[@]}"; do
+		logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+		rtrn=$?
+		exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+	done
+	logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
+	waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+	if [[ -s ${INTERLEAVED_ERROR} ]] 
+		then logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_interleave_reads}. See ${INTERLEAVED_ERROR} file for more details."
+	fi 
+	logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_interleave_reads} processes finished. Will proceed to next step ..."
+	PIDS_ARR=()
+
+	# set data with interleaved sequences to build hash count table
+	DATA=${!interleaved_reads}
+	;;
+	(false)
+	# set data with input paired end sequences to build hash count table
+	DATA="${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path}"
+	;;
+esac
 
 #
 # Counting k-mers
@@ -519,11 +539,7 @@ declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_int
 eval "$(toupper ${NAMESPACE}_sample)_hash_count=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}.hashcount"
 declare -r khmer_hash_count=$(toupper ${NAMESPACE}_sample)_hash_count
 
-khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${!interleaved_reads} 2>${COUNTING_ERROR} | logger_debug &"
-# TODO: no need to interleave reads before counting hash, will save disk space, make interleaving a cli option, --interleaving
-# and make input data=interleaved.fastq or data=[pe1.fq,pe2.fq] if no interleaving enabled
-# the following command works:
-#khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} 2>${COUNTING_ERROR} | logger_debug &"
+khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${DATA} 2>${COUNTING_ERROR} | logger_debug &"
 
 # run cli
 logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_load_into_counting_cli"
