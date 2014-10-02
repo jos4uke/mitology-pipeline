@@ -650,6 +650,7 @@ PIDS_ARR=()
 #
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting and splitting paired reads ... "
 EXTRACTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_extracting_pe.err
+SPLITTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_splitting_pe.err
 
 ### extracting paired reads
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting paired and orphan reads ... "
@@ -660,7 +661,7 @@ eval "$(toupper ${NAMESPACE}_sample)_abundfilt_se=${!khmer_abundfilt}.se"
 declare -r khmer_abundfilt_pe=$(toupper ${NAMESPACE}_sample)_abundfilt_pe
 declare -r khmer_abundfilt_se=$(toupper ${NAMESPACE}_sample)_abundfilt_se
 
-khmer_extract_paired_reads_cli="${!khmer_extract_paired_reads} ${!khmer_abundfilt} 2>$EXTRACTING_PE_ERROR} | logger_debug &"
+khmer_extract_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_extract_paired_reads} $(basename ${!khmer_abundfilt}) 2>$(basename ${EXTRACTING_PE_ERROR}) | logger_debug &"
 
 # run cli
 logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_extract_paired_reads_cli"
@@ -669,6 +670,10 @@ pid=$!
 rtrn=$?
 eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_extract_paired_reads_cli."
 exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# go back to working dir
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR." 
+cd $WORKING_DIR
 
 # add pid to array
 PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
@@ -698,9 +703,72 @@ waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_extract_paired_reads} processes finished. Will proceed to next step ..."
 PIDS_ARR=()
 
+### check for extracted reads files
+if [[ -s ${!khmer_abundfilt_pe} && -e ${!khmer_abundfilt_se} ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired and orphan reads were extracted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+else
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to extract paired and orphan reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+	exit 1
+fi
+
 ### splitting paired reads
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Splitting paired reads ... "
+# build cli
+declare -r khmer_split_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_split_paired_reads
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1=${!khmer_abundfilt_pe}.1"
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2=${!khmer_abundfilt_pe}.2"
+declare -r khmer_abundfilt_pe_1=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1
+declare -r khmer_abundfilt_pe_2=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2
 
+khmer_split_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_split_paired_reads} $(basename ${!khmer_abundfilt_pe}) 2>$(basename ${SPLITTING_PE_ERROR}) | logger_debug &"
 
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_split_paired_reads_cli"
+eval "$khmer_split_paired_reads_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_split_paired_reads_cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# go back to working dir
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR."
+cd $WORKING_DIR
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until interleave reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### checking errors at start
+if [[ -s ${SPLITTING_PE_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_split_paired_reads}. See ${SPLITTING_PE_ERROR} file for more details."
+	if [[ -n $(grep "Error" $SPLITTING_PE_ERROR) ]]; then
+		cat $SPLITTING_PE_ERROR| logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_split_paired_reads} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_split_paired_reads} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+### check for splitted paired end reads
+if [[ -s ${!khmer_abundfilt_pe_1} && -s ${!khmer_abundfilt_pe_2} ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired end reads were splitted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+else
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to split paired end reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+	exit 1
+fi
 
 
 
