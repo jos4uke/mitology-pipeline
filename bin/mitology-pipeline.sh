@@ -116,13 +116,15 @@ you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 
-Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR]
+Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-C|--kmer_abund_cutoff INT] [-e|--email_address VALID_EMAIL_ADDR]
 
-Options:
+Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
                                         You can get a copy there: $PIPELINE_USER_CONFIG.
 -C|--kmer_abund_cutoff INT				The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) corresponding to errors and contaminants. This value overrides the one given in the CONFIG_FILE. 
 -o|--out_dir OUTPUT_DIR                 The output directory.
+
+Options:
 -d|--debug                              Enable debugging mode in the console.
 -e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
 -h|--help                               Displays this message.
@@ -132,7 +134,7 @@ Options:
 
 ### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately;
-CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,kmer_abund_cutoff:,out_dir:,debug,email_address: \
+CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,out_dir:,kmer_abund_cutoff:,debug,email_address: \
     -n 'mitology-pipeline.sh' -- "$@"`
 
 if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
@@ -144,8 +146,8 @@ while true; do
     case "$1" in
         -h | --help ) Usage >&2; exit 1;;
         -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
-		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
+		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -d | --debug )
                     appender_setLevel console DEBUG;
                     appender_activateOptions console;
@@ -176,10 +178,10 @@ fi
 # OVERRIDE CONFIG
 # SET GENOME PATH AND INDEXES
 # CHECKING SAMPLE
-# K-MER ABUNDANCE FILTERING
-# ASSEMBLY
+# K-MER ABUNDANCE FILTERING: FILTERED READS
+# ASSEMBLY: CONTIGING AND SCAFFOLDING (OPTIONAL)
 # DOT PLOT AGAINST REFERENCE GENOME
-# INTERNAL CONSISTENCY: MAPPING READS AGAINST REFERENCE GENOME + FILTERING
+# INTERNAL CONSISTENCY: MAPPING FILTERED READS AGAINST CONTIGS AND SCAFFOLDS (OPTIONAL)
 # CLEANING
 
 #===================
@@ -245,7 +247,7 @@ rtrn=$?
 cp_user_config_failed_msg="[Check config: session user config file] Failed backuping session user config file into session directory."
 [[ "$rtrn" -ne 0 ]] && logger_fatal "$cp_user_config_failed_msg"
 exit_on_error "$ERROR_TMP" "$cp_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-logger_info "[Check config: session user config file] Will use backuped session user config file: $BACKUPED_CONFIG_FILE" | tee -a $LOG_DIR/$DEBUGFILE 2>&1
+logger_info "[Check config: session user config file] Will use backuped session user config file: $BACKUPED_CONFIG_FILE" 2>&1
 
 # 2. Load config parameters from backuped session user config file
 logger_info "[Check config: session user config file] Loading session user config parameters from $BACKUPED_CONFIG_FILE file ..."
@@ -420,6 +422,353 @@ if [[ ! -s "${!current_sample_seq_R2_path}" ]]; then
 	exit 1
 fi
 logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, exists."
+
+#===============================
+# 01. K-MER ABUNDANCE FILTERING
+#===============================
+
+# STEPS
+## CREATE OUTPUT DIR
+## INTERLEAVE READS 
+## COUNTING KMERS
+## FILTER K-MER ABUNDANCE
+## EXTRACT AND SPLIT PAIRED READS
+
+#
+# Create K-mer abundance filtering output directory
+#
+KMER_FILTER_ABUND_OUTDIR="01.K-mer_filter_abund"
+logger_info "Creating $KMER_FILTER_ABUND_OUTDIR directory ..." 
+if [[ -d $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR ]]; then
+    logger_debug"OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
+else
+    mkdir $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
+    rtrn=$?
+    out_dir_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed. K-mer abundance filtering output directory, $KMER_FILTER_ABUND_OUTDIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $KMER_FILTER_ABUND_OUTDIR directory was created successfully. Will output all k-mer abundance filtering output files in this directory."
+fi
+
+### Enable the k-mer abundance filtering debug logger
+KMER_FILTER_ABUND_DEBUGF=${KMER_FILTER_ABUND_OUTDIR}_debug.log
+logger_addAppender kmerFiltAbundF
+appender_setType kmerFiltAbundF FileAppender
+appender_file_setFile kmerFiltAbundF $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF
+appender_setLevel kmerFiltAbundF DEBUG
+appender_setLayout kmerFiltAbundF PatternLayout
+appender_setPattern kmerFiltAbundF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions kmerFiltAbundF
+appender_exists kmerFiltAbundF && logger_info "[$KMER_FILTER_ABUND_OUTDIR] Debugging infos on k-mer abundance filtering will be output to $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF file." || logger_warn "The kmerFiltAbundF debugger file appender was not enabled. Maybe a log4sh error occured."
+### error handling
+KMER_FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${KMER_FILTER_ABUND_OUTDIR}.err
+
+#
+# Interleave reads
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
+INTERLEAVED_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.err
+
+# build cli
+declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
+eval "$(toupper ${NAMESPACE}_sample)_interleaved_reads=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.fastq"
+declare -r interleaved_reads=$(toupper ${NAMESPACE}_sample)_interleaved_reads
+kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} >${!interleaved_reads} 2>${INTERLEAVED_ERROR} &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
+eval "$kmer_filt_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until interleave reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+rtrn=$?
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+if [[ -s ${INTERLEAVED_ERROR} ]] 
+then logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_interleave_reads}. See ${INTERLEAVED_ERROR} file for more details."
+fi 
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_interleave_reads} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+# set data with interleaved sequences to build hash count table
+DATA=${!interleaved_reads}
+
+#
+# Counting k-mers
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Counting k-mers ..."
+COUNTING_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_counting.err
+
+# build cli options
+khmer_load_into_counting_opts=($(buildCommandLineOptions "khmer_load_into_counting" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
+rtrn=$?
+cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_load_into_counting command line options for current sample ${!current_sample_alias}."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+opts="${khmer_load_into_counting_opts[@]}"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $opts"
+
+# build cli
+declare -r khmer_load_into_counting_k=$(toupper ${NAMESPACE}_khmer_load_into_counting)_k
+declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_into_counting
+eval "$(toupper ${NAMESPACE}_sample)_hash_count=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}.hashcount"
+declare -r khmer_hash_count=$(toupper ${NAMESPACE}_sample)_hash_count
+
+khmer_load_into_counting_cli="${!khmer_load_into_counting} $opts ${!khmer_hash_count} ${DATA} 2>${COUNTING_ERROR} | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_load_into_counting_cli"
+eval "$khmer_load_into_counting_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_load_into_counting_cli cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until load-into-counting process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### check for potential errors at start
+# khmer version 1.1 / screed version 0.7
+# load-into-counting.py throws "IOError: InvalidFASTQFileFormat: sequence and quality scores length mismatch"
+# Not very informative and not related to fastq format considering this issue (https://github.com/ged-lab/khmer/issues/249)
+# checked input fastq: ok, readlength == qualitylength
+# awk '{if(NR%4==2) print NR"\t"$0"\t"length($0)}' test/01.K-mer_filter_abund/cvi_interleaved.fastq > cvi_readlength.txt
+# awk '{if(NR%4==0) print NR"\t"$0"\t"length($0)}' test/01.K-mer_filter_abund/cvi_interleaved.fastq > cvi_qualitylength.txt
+# awk 'NR==FNR{a[$3]++;next}!a[$3]' cvi_readlength.txt cvi_qualitylength.txt | wc -l # => result: 0
+# Proposed fix: do not use multi-threading with T>1
+# fix works but that's a pitty!
+
+if [[ -s ${COUNTING_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_load_into_counting}. See ${COUNTING_ERROR} file for more details."
+	if [[ -n $(grep "Error" $COUNTING_ERROR) ]]; then
+		cat $COUNTING_ERROR | logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_load_into_counting} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_load_into_counting} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+#
+# Filtering k-mer abundance
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Filtering k-mer abundance ..."
+FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_filter-abund.err
+
+# build cli options
+khmer_filter_abund_opts=($(buildCommandLineOptions "khmer_filter_abund" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
+rtrn=$?
+cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_filter_abund command line options for current sample ${!current_sample_alias}."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+opts="${khmer_filter_abund_opts[@]}"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_filter_abund options: $opts"
+
+# build cli
+declare -r khmer_filter_abund_C=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
+declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}_C${!khmer_filter_abund_C}.abundfilt"
+declare -r khmer_abundfilt=$(toupper ${NAMESPACE}_sample)_abundfilt
+
+khmer_filter_abund_cli="${!khmer_filter_abund} $opts -o ${!khmer_abundfilt} ${!khmer_hash_count} ${DATA} 2>${FILTER_ABUND_ERROR} | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_filter_abund_cli"
+eval "$khmer_filter_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_filter_abund_cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until filter-abund process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### checking errors at start
+if [[ -s ${FILTER_ABUND_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_filter_abund}. See ${FILTER_ABUND_ERROR} file for more details."
+	if [[ -n $(grep "Error" $FILTER_ABUND_ERROR) ]]; then
+		cat $FILTER_ABUND_ERROR | logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_filter_abund} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_filter_abund} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+#
+# Extracting and splitting paired-end reads
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting and splitting paired reads ... "
+EXTRACTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_extracting_pe.err
+SPLITTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_splitting_pe.err
+
+### extracting paired reads
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting paired and orphan reads ... "
+# build cli
+declare -r khmer_extract_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_extract_paired_reads
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe=${!khmer_abundfilt}.pe"
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_se=${!khmer_abundfilt}.se"
+declare -r khmer_abundfilt_pe=$(toupper ${NAMESPACE}_sample)_abundfilt_pe
+declare -r khmer_abundfilt_se=$(toupper ${NAMESPACE}_sample)_abundfilt_se
+
+khmer_extract_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_extract_paired_reads} $(basename ${!khmer_abundfilt}) 2>$(basename ${EXTRACTING_PE_ERROR}) | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_extract_paired_reads_cli"
+eval "$khmer_extract_paired_reads_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_extract_paired_reads_cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# go back to working dir
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR." 
+cd $WORKING_DIR
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until extract-paired-reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### checking errors at start
+if [[ -s ${EXTRACTING_PE_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_extract_paired_reads}. See ${EXTRACTING_PE_ERROR} file for more details."
+	if [[ -n $(grep "Error" $EXTRACTING_PE_ERROR) ]]; then
+		cat $EXTRACTING_PE_ERROR| logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_extract_paired_reads} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_extract_paired_reads} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+### check for extracted reads files
+if [[ -s ${!khmer_abundfilt_pe} && -e ${!khmer_abundfilt_se} ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired and orphan reads were extracted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+else
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to extract paired and orphan reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+	exit 1
+fi
+
+### splitting paired reads
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Splitting paired reads ... "
+# build cli
+declare -r khmer_split_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_split_paired_reads
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1=${!khmer_abundfilt_pe}.1"
+eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2=${!khmer_abundfilt_pe}.2"
+declare -r khmer_abundfilt_pe_1=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1
+declare -r khmer_abundfilt_pe_2=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2
+
+khmer_split_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_split_paired_reads} $(basename ${!khmer_abundfilt_pe}) 2>$(basename ${SPLITTING_PE_ERROR}) | logger_debug &"
+
+# run cli
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_split_paired_reads_cli"
+eval "$khmer_split_paired_reads_cli" 2>$KMER_FILTER_ABUND_ERROR
+pid=$!
+rtrn=$?
+eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_split_paired_reads_cli."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+
+# go back to working dir
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR."
+cd $WORKING_DIR
+
+# add pid to array
+PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+# wait until split-paired-reads process finish then proceed to next step
+# and reinit pid array
+pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
+for p in "${PIDS_ARR[@]}"; do
+    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
+    rtrn=$?
+    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+done
+
+### checking errors at start
+if [[ -s ${SPLITTING_PE_ERROR} ]] 
+	then 
+		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_split_paired_reads}. See ${SPLITTING_PE_ERROR} file for more details."
+	if [[ -n $(grep "Error" $SPLITTING_PE_ERROR) ]]; then
+		cat $SPLITTING_PE_ERROR| logger_warn
+		logger_fatal $eval_failed_msg
+		exit 1
+	fi
+fi
+### end checking errors at start
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_split_paired_reads} processes to finish before proceed to next step."
+waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_split_paired_reads} processes finished. Will proceed to next step ..."
+PIDS_ARR=()
+
+### check for splitted paired end reads
+if [[ -s ${!khmer_abundfilt_pe_1} && -s ${!khmer_abundfilt_pe_2} ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired end reads were splitted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+else
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to split paired end reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
+	exit 1
+fi
+
+### close appender
+appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
+
+
+#=====================================
+# ASSEMBLY: CONTIGING AND SCAFFOLDING 
+#=====================================
+
+
+
+
+
+
+
 
 
 
