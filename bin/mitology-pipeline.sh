@@ -4,7 +4,7 @@
 # MITOLOGY PIPELINE
 #
 
-# Authors: Joseph Tran <Joseph.Tran@versailles.inra.fr>, Delphine Charif <Delphine.Charif@versailles.inra.fr>
+# Authors: Joseph Tran <Joseph.Tran@versailles.inra.fr>
 
 # This script provides a pipeline for plant organites (chloroplast and mitochondrion) assembly 
 # GRANT: ANR BIOADAPT CYTOPHENO 2013
@@ -109,7 +109,7 @@ printf %s "\
 Program: $(basename $0)
 Version: $VERSION
 
-Copyright 2014 Joseph Tran <Joseph.Tran@versailles.inra.fr> & Delphine Charif <Delphine.Charif@versailles.inra.fr>
+Copyright 2014 Joseph Tran <Joseph.Tran@versailles.inra.fr>
 
 Licensed under the CeCILL License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
