@@ -102,6 +102,16 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+# mitology-pipeline lib
+[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../share/mitology-pipeline/lib/mitology-pipeline_lib.inc || LIB_PATH=/usr/local/share/mitology-pipeline/lib/mitology-pipeline_lib.inc
+
+logger_debug "[Library] Loading $LIB_PATH"
+. $LIB_PATH
+if [[ $? -ne 0 ]]; then
+	logger_fatal "Error loading mitology pipeline lib: $LIB_PATH"
+	exit 1
+fi
+
 ### USAGE ###
 Usage()
 {
@@ -464,50 +474,74 @@ appender_exists kmerFiltAbundF && logger_info "[$KMER_FILTER_ABUND_OUTDIR] Debug
 KMER_FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${KMER_FILTER_ABUND_OUTDIR}.err
 
 #
+# LINK step
+#
+# link config loading output to interleaving input 
+eval "$(toupper ${NAMESPACE}_interleaving_input)=(['R1']=${!current_sample_seq_R1_path} ['R2']=${!current_sample_seq_R2_path})"
+declare -r interleaving_input=$(toupper ${NAMESPACE}_interleaving_input)
+
+#
 # Interleave reads
 #
+
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
-INTERLEAVED_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.err
 
-# build cli
+# set interleaving vars
+INTERLEAVING_SUBDIR="1.Interleaving"
+INTERLEAVING_SUBDIR_PATH=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$INTERLEAVING_SUBDIR
+INTERLEAVING_ERROR=$INTERLEAVING_SUBDIR_PATH/${!current_sample_alias}_interleaved.err
+## define interleaving output
+eval "$(toupper ${NAMESPACE}_interleaving_output)=(['filename']=${INTERLEAVING_SUBDIR_PATH}/${!current_sample_alias}_interleaved.fastq)"
+declare -r interleaving_output=$(toupper ${NAMESPACE}_interleaving_output)
+## build cli
 declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
-eval "$(toupper ${NAMESPACE}_sample)_interleaved_reads=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_interleaved.fastq"
-declare -r interleaved_reads=$(toupper ${NAMESPACE}_sample)_interleaved_reads
-kmer_filt_abund_cli="${!khmer_interleave_reads} ${!current_sample_seq_R1_path} ${!current_sample_seq_R2_path} >${!interleaved_reads} 2>${INTERLEAVED_ERROR} &"
+interleaving_cli="${!khmer_interleave_reads} ${!interleaving_input["R1"]} ${!interleaving_input["R2"]} >${!interleaving_output["filename"]} 2>${INTERLEAVING_ERROR} &"
 
-# run cli
-logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $kmer_filt_abund_cli"
-eval "$kmer_filt_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
-pid=$!
-rtrn=$?
-eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $kmer_filt_abund_cli cli." 
-exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+# check if interleaving subdir exists else create
+# set interleaving step input vars (no need to check seq file: already done in sample checking block)
+# exists: check interleaving step output var => if output file exist else run step
+# not exist: run step
+logger_info "Creating $INTERLEAVING_SUBDIR_PATH directory ..."
+if [[ -d $INTERLEAVING_SUBDIR_PATH ]]; then
+	logger_debug "OK $INTERLEAVING_SUBDIR_PATH directory already exists. Will check for already existing output files."
 
-# add pid to array
-PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-# wait until interleave reads process finish then proceed to next step
-# and reinit pid array
-pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
-for p in "${PIDS_ARR[@]}"; do
-logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
-rtrn=$?
-exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-done
-logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_interleave_reads} processes to finish before proceed to next step."
-waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-if [[ -s ${INTERLEAVED_ERROR} ]] 
-then logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_interleave_reads}. See ${INTERLEAVED_ERROR} file for more details."
-fi 
-logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_interleave_reads} processes finished. Will proceed to next step ..."
-PIDS_ARR=()
+	# check for existing output files
+	if [[ -s ${!interleaving_output["filename"]} ]]; then
+		# skip step
+		logger_info "[$INTERLEAVING_SUBDIR] Output file already exists: ${!interleaving_output["filename"]}."
+		logger_info "[$INTERLEAVING_SUBDIR] Skip interleaving step."
+	else
+		# run step
+		logger_info "[$INTERLEAVING_SUBDIR] Will run interleaving step ..."
+		run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+	fi
+else
+	# create subdir
+	mkdir $INTERLEAVING_SUBDIR_PATH 2>$KMER_FILTER_ABUND_ERROR
+	rtrn=$?
+	out_dir_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed. Interleaving output directory, $INTERLEAVING_SUBDIR_PATH, was not created."
+	[[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $INTERLEAVING_SUBDIR_PATH directory was created successfully. Will output interleaving output files in this directory."
+	# run step
+	logger_info "[$INTERLEAVING_SUBDIR] Will run interleaving step ..."
+	run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+fi
 
-# set data with interleaved sequences to build hash count table
-DATA=${!interleaved_reads}
+#
+# LINK step
+#
+# link interleaving output and hashcount input 
+eval "$(toupper ${NAMESPACE}_hashcount_input)=(['input_sequence_filename']=${!interleaving_output['filename']})"
+declare -r hashcount_input=$(toupper ${NAMESPACE}_hashcount_input)
 
 #
 # Counting k-mers
 #
+
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Counting k-mers ..."
+
+
 COUNTING_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_counting.err
 
 # build cli options
