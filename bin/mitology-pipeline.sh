@@ -546,7 +546,7 @@ logger_info "[$KMER_FILTER_ABUND_OUTDIR] Counting k-mers ..."
 # set hashcount vars
 HASHCOUNT_SUBDIR="2.Hashcount"
 HASHCOUNT_SUBDIR_PATH="$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$HASHCOUNT_SUBDIR"
-HASHCOUNT_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_counting.err
+HASHCOUNT_ERROR=$HASHCOUNT_SUBDIR_PATH/${!current_sample_alias}_counting.err
 declare -r khmer_load_into_counting_k=$(toupper ${NAMESPACE}_khmer_load_into_counting)_k
 # define hashcount output
 eval "$(toupper ${NAMESPACE}_hashcount_output)=(['output_countingtable_filename']=$HASHCOUNT_SUBDIR_PATH/${!current_sample_alias}_k${!khmer_load_into_counting_k}.hashcount)"
@@ -557,18 +557,18 @@ rtrn=$?
 cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_load_into_counting command line options for current sample ${!current_sample_alias}."
 exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
 hashcount_opts="${khmer_load_into_counting_opts[@]}"
-logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $opts"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $hashcount_opts"
 # build cli
 declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_into_counting
 hashcount_cli="${!khmer_load_into_counting} $hashcount_opts ${!hashcount_output['output_countingtable_filename']} ${!hashcount_input['input_sequence_filename']} 2>${HASHCOUNT_ERROR} | logger_debug &"
 
 # check if hashcount subdir exists else create
 # set hashcount step input vars (see previous LINK step)
-# exists: check hashcount step output var => if output file exists run step
+# exists: check hashcount step output var => if output file exists skip step
 # not exist: run step
-logger_info "Creating $HASHCOUNT_SUBDIR_PATH directory ..."
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Creating $HASHCOUNT_SUBDIR_PATH directory ..."
 if [[ -d $HASHCOUNT_SUBDIR_PATH ]]; then
-	logger_debug "OK $HASHCOUNT_SUBDIR_PATH directory already exists. Will check for already existing output files."
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $HASHCOUNT_SUBDIR_PATH directory already exists. Will check for already existing output files."
 
 	# check for existing output files
 	if [[ -s ${!hashcount_output['output_countingtable_filename']} ]]; then
@@ -605,67 +605,113 @@ else
 fi
 
 #
+# LINK step
 #
+# link hashcount output and filterabund input
+# link sample inputs and filterabund input
+# add prefix for output files
+filterabund_prefix_out=$(basename ${!hashcount_output['output_countingtable_filename']%.*})
+eval "declare -A $(toupper ${NAMESPACE}_filterabund_input)" 
+filterabund_input=$(toupper ${NAMESPACE}_filterabund_input)
+eval "${filterabund_input}=( [input_presence_table_filename]=${!hashcount_output['output_countingtable_filename']} )"
+eval "${filterabund_input}+=([prefix_out]=$filterabund_prefix_out)"
+eval "${filterabund_input}+=([input_sequence_filename_R1]=${!current_sample_seq_R1_path})"
+eval "${filterabund_input}+=([input_sequence_filename_R2]=${!current_sample_seq_R2_path})"
+
+## test filterabund_input hash
+#echo -e "hash_ori: ${!hashcount_output['output_countingtable_filename']}"
+#echo -e "R1_ori: ${!current_sample_seq_R1_path}"
+#echo -e "R2_ori: ${!current_sample_seq_R2_path}"
+#echo -e "prefix_out: $filterabund_prefix_out"
+#echo ""
+#echo -e "array: ${filterabund_input}"
+#hashcount="${filterabund_input}[input_presence_table_filename]"
+#echo -e "hash: ${!hashcount}" # works!
+#R1="${filterabund_input}[input_sequence_filename_R1]"
+#echo -e "R1: ${!R1}"
+#R2="${filterabund_input}[input_sequence_filename_R1]"
+#echo -e "R2: ${!R2}"
+#prefix="${filterabund_input}[prefix_out]"
+#echo -e "prefix_out: ${!prefix}"
+#vals="${filterabund_input}[@]"
+#keys=$(eval echo '${!'$vals'}') # works!
+#echo -e "keys: $keys"
 #
+## hash
+#declare -A arr
+#arr=([prefix_out]=$filterabund_prefix_out)
+#arr+=([input_presence_table_filename]=${!hashcount_output['output_countingtable_filename']})
 #
-##
-## Filtering k-mer abundance
-##
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Filtering k-mer abundance ..."
-#FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_filter-abund.err
+#echo -e "prefix_out: ${arr[prefix_out]}"
+#echo -e "input_presence_table_filename: ${arr[input_presence_table_filename]}"
+#echo -e "keys: ${!arr[@]}"
+#exit 0
+## end test
+
 #
-## build cli options
-#khmer_filter_abund_opts=($(buildCommandLineOptions "khmer_filter_abund" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
-#rtrn=$?
-#cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_filter_abund command line options for current sample ${!current_sample_alias}."
-#exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#opts="${khmer_filter_abund_opts[@]}"
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_filter_abund options: $opts"
-#shcount_test/01.K-mer_filter_abund/cvi_counting.err
-## build cli
-#declare -r khmer_filter_abund_C=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
-#declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
-#eval "$(toupper ${NAMESPACE}_sample)_abundfilt=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_k${!khmer_load_into_counting_k}_C${!khmer_filter_abund_C}.abundfilt"
-#declare -r khmer_abundfilt=$(toupper ${NAMESPACE}_sample)_abundfilt
+# Filtering k-mer abundance
 #
-#khmer_filter_abund_cli="${!khmer_filter_abund} $opts -o ${!khmer_abundfilt} ${!khmer_hash_count} ${DATA} 2>${FILTER_ABUND_ERROR} | logger_debug &"
-#
-## run cli
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_filter_abund_cli"
-#eval "$khmer_filter_abund_cli" 2>$KMER_FILTER_ABUND_ERROR
-#pid=$!
-#rtrn=$?
-#eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_filter_abund_cli."
-#exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#
-## add pid to array
-#PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-## wait until filter-abund process finish then proceed to next step
-## and reinit pid array
-#pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
-#for p in "${PIDS_ARR[@]}"; do
-#    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
-#    rtrn=$?
-#    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#done
-#
-#### checking errors at start
-#if [[ -s ${FILTER_ABUND_ERROR} ]] 
-#	then 
-#		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_filter_abund}. See ${FILTER_ABUND_ERROR} file for more details."
-#	if [[ -n $(grep "Error" $FILTER_ABUND_ERROR) ]]; then
-#		cat $FILTER_ABUND_ERROR | logger_warn
-#		logger_fatal $eval_failed_msg
-#		exit 1
-#	fi
-#fi
-#### end checking errors at start
-#
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_filter_abund} processes to finish before proceed to next step."
-#waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_filter_abund} processes finished. Will proceed to next step ..."
-#PIDS_ARR=()
-#
+
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Filtering k-mer abundance ..."
+
+# set filterabund vars
+FILTERABUND_SUBDIR="3.Filterabund"
+FILTERABUND_SUBDIR_PATH="$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$FILTERABUND_SUBDIR"
+FILTERABUND_ERROR="${FILTERABUND_SUBDIR_PATH}/${!current_sample_alias}_filterabund.err"
+# define filterabund output
+declare -r khmer_filter_abund_C=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
+filterabund_input_prefix="${filterabund_input}[prefix_out]"
+eval "$(toupper ${NAMESPACE}_filterabund_output)=(['out']=${FILTERABUND_SUBDIR_PATH}/${!filterabund_input_prefix}_C${!khmer_filter_abund_C}.filterabund)"
+declare -r filterabund_output=$(toupper ${NAMESPACE}_filterabund_output)
+# build cli options
+khmer_filterabund_opts=($(buildCommandLineOptions "khmer_filter_abund" "$NAMESPACE" 2>$KMER_FILTER_ABUND_ERROR))
+rtrn=$?
+cli_opts_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while building the khmer_filter_abund command line options for current sample ${!current_sample_alias}."
+exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+filterabund_opts="${khmer_filterabund_opts[@]}"
+logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_filter_abund options: $filterabund_opts"
+# build cli
+declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
+filterabund_input_hashcount="${filterabund_input}[input_presence_table_filename]"
+filterabund_input_R1="${filterabund_input}[input_sequence_filename_R1]"
+filterabund_input_R2="${filterabund_input}[input_sequence_filename_R2]"
+filterabund_cli="${!khmer_filter_abund} $filterabund_opts \
+	-o ${!filterabund_output['out']} \
+	${!filterabund_input_hashcount} \
+	${!filterabund_input_R1} \
+	${!filterabund_input_R2} \
+	2>${FILTERABUND_ERROR} | logger_debug &"
+
+# check if filterabund subdir exists else create 
+# set filterabund step input vars (see previous LINK step)
+# exists: check filterabund step output var => if output file exists skip step 
+# not exist: run step 
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Creating $FILTERABUND_SUBDIR_PATH directory ..."
+if [[ -d $FILTERABUND_SUBDIR_PATH ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $FILTERABUND_SUBDIR_PATH directory already exists. Will check for already existing output files."
+	
+	# check for existing output files
+	if [[ -s ${!filterabund_output['out']} ]]; then
+		# skip step
+		logger_info "[$FILTERABUND_SUBDIR] Output file already exists: ${!filterabund_output['out']}."
+		logger_info "[$FILTERABUND_SUBDIR] Skip filterabund step."
+	else
+		# run step
+		logger_info "[$FILTERABUND_SUBDIR] Will run filterabund step ... "
+		run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+	fi
+else
+	# create subdir
+	mkdir $FILTERABUND_SUBDIR_PATH 2>$KMER_FILTER_ABUND_ERROR
+	rtrn=$?
+	out_dir_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed. Filterabund output directory, $FILTERABUND_SUBDIR_PATH, was not created."
+	[[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+	# run step
+	logger_info "[$FILTERABUND_SUBDIR] Will run filterabund step ... "
+	run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+fi
+
 ##
 ## Extracting and splitting paired-end reads
 ##
