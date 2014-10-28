@@ -7,7 +7,9 @@
 # Authors: Joseph Tran <Joseph.Tran@versailles.inra.fr>
 
 # This script provides a pipeline for plant organites (chloroplast and mitochondrion) assembly 
-# GRANT: ANR BIOADAPT CYTOPHENO 2013
+# GRANT: ANR BIOADAPT CYTOPHENO 2012
+
+# based on the preliminary work of 2 interns (03-07/2014): Alexandrina Brodrug and Myriam Shafie
 
 # This software is governed by the CeCILL license, Version 2.0 (the "License"), under French law and
 # abiding by the rules of distribution of free software.  You can  use,
@@ -619,7 +621,7 @@ fi
 #exit_on_error "$KMER_FILTER_ABUND_ERROR" "$cli_opts_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
 #opts="${khmer_filter_abund_opts[@]}"
 #logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_filter_abund options: $opts"
-#
+#shcount_test/01.K-mer_filter_abund/cvi_counting.err
 ## build cli
 #declare -r khmer_filter_abund_C=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
 #declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
