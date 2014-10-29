@@ -133,10 +133,12 @@ Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--
 Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
                                         You can get a copy there: $PIPELINE_USER_CONFIG.
--C|--kmer_abund_cutoff INT				The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) corresponding to errors and contaminants. This value overrides the one given in the CONFIG_FILE. 
 -o|--out_dir OUTPUT_DIR                 The output directory.
 
 Options:
+-C|--kmer_abund_cutoff INT              The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) 
+										corresponding to errors and contaminants. This value overrides the one given 
+										in the CONFIG_FILE.
 -d|--debug                              Enable debugging mode in the console.
 -e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
 -h|--help                               Displays this message.
