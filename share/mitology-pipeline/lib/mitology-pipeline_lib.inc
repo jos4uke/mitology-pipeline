@@ -10,6 +10,18 @@
 # VERSION="dev"
 
 #
+# Array utils
+#
+#----------------------------------------------------------
+# Function: elementIn 
+# Purpose: Tells if the given string is in the array and returns the matched value 
+elementIn() {
+	local e
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && echo "$1"; return 0; done
+    return 1
+}
+
+#
 # Process management
 #
 
