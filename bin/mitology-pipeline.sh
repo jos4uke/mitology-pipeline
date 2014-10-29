@@ -751,7 +751,7 @@ if [[ -d $EXTRACTPAIRS_SUBDIR_PATH ]]; then
 	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $EXTRACTPAIRS_SUBDIR_PATH directory already exists. Will check for already existing output files."
 
 	# check for existing output files
-	filterabund="${extractpairs_input}[prefix_out]"
+	filterabund="${extractpairs_input}[infile]"
 	filterabund_pe="${!filterabund}.pe"
 	filterabund_se="${!filterabund}.se"
 	extractpairs_skip=false
@@ -764,7 +764,7 @@ if [[ -d $EXTRACTPAIRS_SUBDIR_PATH ]]; then
 		logger_warn "[$EXTRACTPAIRS_SUBDIR] Output file, ${filterabund_pe}, does not exist. Should run extractpairs step."
 	fi
 	## se : not mandatory
-	if [[ -s ${filterabund_se} ]]; then
+	if [[ -e ${filterabund_se} ]]; then
 		#extractpairs_skip=true
 		logger_info "[$EXTRACTPAIRS_SUBDIR] Output file already exists: ${filterabund_se}."
 	else
@@ -780,8 +780,9 @@ if [[ -d $EXTRACTPAIRS_SUBDIR_PATH ]]; then
 			;;
 		# run
 		(false)
-			logger_info "[$EXTRACTPAIRS_SUBDIR] Will run extractpairs step."
+			logger_info "[$EXTRACTPAIRS_SUBDIR] Will run extractpairs step ... "
 			run_cli -c "$extractpairs_cli" -t "$EXTRACTPAIRS_SUBDIR" -e "$EXTRACTPAIRS_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+			cd "$WORKING_DIR"
 			;;
 	esac
 else
@@ -791,68 +792,80 @@ else
 	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$EXTRACTPAIRS_SUBDIR_PATH directory does not exist." 1 "" $SESSION_TAG $EMAIL
 fi
 
-### TODO ###
-# update debug/log file paths: append the working dir absolute path to fix log file path error msgs
+#
+# LINK step
+#
+# link extractpairs output and splitpairs input
+eval "declare -A $(toupper ${NAMESPACE}_splitpairs_input)"
+declare -r splitpairs_input=$(toupper ${NAMESPACE}_splitpairs_input)
+extractpairs_pe="${extractpairs_output}[pe]"
+eval "${splitpairs_input}=( [infile]=${!extractpairs_pe} )"
+splitpairs_prefix_out=$(basename ${!extractpairs_pe})
+eval "${splitpairs_input}+=( [prefix_out]=$splitpairs_prefix_out )"
 
+#
+# Splitting paired reads
+#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Splitting paired reads ... "
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] current dir: $(pwd)"
 
-#### splitting paired reads
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Splitting paired reads ... "
-## build cli
-#declare -r khmer_split_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_split_paired_reads
-#eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1=${!khmer_abundfilt_pe}.1"
-#eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2=${!khmer_abundfilt_pe}.2"
-#declare -r khmer_abundfilt_pe_1=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_1
-#declare -r khmer_abundfilt_pe_2=$(toupper ${NAMESPACE}_sample)_abundfilt_pe_2
-#
-#khmer_split_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_split_paired_reads} $(basename ${!khmer_abundfilt_pe}) 2>$(basename ${SPLITTING_PE_ERROR}) | logger_debug &"
-#
-## run cli
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_split_paired_reads_cli"
-#eval "$khmer_split_paired_reads_cli" 2>$KMER_FILTER_ABUND_ERROR
-#pid=$!
-#rtrn=$?
-#eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_split_paired_reads_cli."
-#exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#
-## go back to working dir
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR."
-#cd $WORKING_DIR
-#
-## add pid to array
-#PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-## wait until split-paired-reads process finish then proceed to next step
-## and reinit pid array
-#pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
-#for p in "${PIDS_ARR[@]}"; do
-#    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
-#    rtrn=$?
-#    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#done
-#
-#### checking errors at start
-#if [[ -s ${SPLITTING_PE_ERROR} ]] 
-#	then 
-#		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_split_paired_reads}. See ${SPLITTING_PE_ERROR} file for more details."
-#	if [[ -n $(grep "Error" $SPLITTING_PE_ERROR) ]]; then
-#		cat $SPLITTING_PE_ERROR| logger_warn
-#		logger_fatal $eval_failed_msg
-#		exit 1
-#	fi
-#fi
-#### end checking errors at start
-#
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_split_paired_reads} processes to finish before proceed to next step."
-#waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_split_paired_reads} processes finished. Will proceed to next step ..."
-#PIDS_ARR=()
-#
-#### check for splitted paired end reads
-#if [[ -s ${!khmer_abundfilt_pe_1} && -s ${!khmer_abundfilt_pe_2} ]]; then
-#	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired end reads were splitted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
-#else
-#	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to split paired end reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
-#	exit 1
-#fi
+# set splitpairs vars
+SPLITPAIRS_SUBDIR=$FILTERABUND_SUBDIR
+SPLITPAIRS_SUBDIR_PATH=$FILTERABUND_SUBDIR_PATH
+SPLITPAIRS_ERROR="$SPLITPAIRS_SUBDIR_PATH/${!current_sample_alias}_splitpairs.err"
+# define splitpairs output
+eval "declare -A $(toupper ${NAMESPACE}_splitpairs_output)"
+declare -r splitpairs_output=$(toupper ${NAMESPACE}_splitpairs_output)
+eval "${splitpairs_output}=( [pe.1]=${!extractpairs_pe}.1 )"
+eval "${splitpairs_output}+=( [pe.2]=${!extractpairs_pe}.2 )"
+
+# build cli
+declare -r khmer_split_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_split_paired_reads
+splitpairs_input_filterabund_pe="${splitpairs_input}[infile]"
+splitpairs_cli="cd $SPLITPAIRS_SUBDIR_PATH; ${!khmer_split_paired_reads} $(basename ${!splitpairs_input_filterabund_pe}) 2>$(basename $SPLITPAIRS_ERROR) | logger_debug &"
+
+# no need to check for splitpairs output dir, nor to create it
+# set splitpairs step input vars (see previous LINK step)
+# check for splitpairs step output vars => if already exist skip step else run step
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Checking for $SPLITPAIRS_SUBDIR_PATH directory ..."
+if [[ -d $SPLITPAIRS_SUBDIR_PATH ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $SPLITPAIRS_SUBDIR_PATH directory already exists. Will check for already existing output files."
+
+	# check for existing output files
+	filterabund_pe="${splitpairs_input}[infile]"
+	filterabund_pe_1="${!filterabund_pe}.1"
+	filterabund_pe_2="${!filterabund_pe}.2"
+	splitpairs_skip=false
+	## pe.1 && pe.2 : mandatory
+	if [[ -s ${filterabund_pe_1} && -s ${filterabund_pe_2} ]]; then
+		splitpairs_skip=true
+		logger_info "[$SPLITPAIRS_SUBDIR] Output file already exists: ${filterabund_pe_1}"
+		logger_info "[$SPLITPAIRS_SUBDIR] Output file already exists: ${filterabund_pe_2}"
+	else
+		splitpairs_skip=false
+		[[ ! -s ${filterabund_pe_1} ]] && logger_warn "[$SPLITPAIRS_SUBDIR] Output file, ${filterabund_pe_1}, does not exist. Should run splitpairs step."
+		[[ ! -s ${filterabund_pe_2} ]] && logger_warn "[$SPLITPAIRS_SUBDIR] Output file, ${filterabund_pe_2}, does not exist. Should run splitpairs step."
+	fi
+
+	# run or skip step
+	case $splitpairs_skip in 
+		# skip
+		(true)
+			logger_info "[$SPLITPAIRS_SUBDIR] Skip splitpairs step."
+			;;
+		(false)
+			logger_info "[$SPLITPAIRS_SUBDIR] Will run splitpairs step ... "
+			run_cli -c "$splitpairs_cli" -t "$SPLITPAIRS_SUBDIR" -e "$SPLITPAIRS_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+			cd "$WORKING_DIR"
+			;;
+	esac
+else
+	# trouble
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] The $SPLITPAIRS_SUBDIR_PATH directory does not exist."
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Cannot run the splitpairs step."
+
+	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$SPLITPAIRS_SUBDIR_PATH does not exist." 1 "" $SESSION_TAG $EMAIL
+fi
 
 ### close appender
 appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
