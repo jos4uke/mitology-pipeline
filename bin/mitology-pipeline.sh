@@ -617,6 +617,7 @@ eval "${filterabund_input}=( [input_presence_table_filename]=${!hashcount_output
 eval "${filterabund_input}+=([prefix_out]=$filterabund_prefix_out)"
 eval "${filterabund_input}+=([input_sequence_filename_R1]=${!current_sample_seq_R1_path})"
 eval "${filterabund_input}+=([input_sequence_filename_R2]=${!current_sample_seq_R2_path})"
+eval "${filterabund_input}+=([input_sequence_filename_interleaved]=${!interleaving_output["filename"]})"
 
 ## test filterabund_input hash
 #echo -e "hash_ori: ${!hashcount_output['output_countingtable_filename']}"
@@ -675,11 +676,11 @@ declare -r khmer_filter_abund=$(toupper ${NAMESPACE}_paths)_khmer_filter_abund
 filterabund_input_hashcount="${filterabund_input}[input_presence_table_filename]"
 filterabund_input_R1="${filterabund_input}[input_sequence_filename_R1]"
 filterabund_input_R2="${filterabund_input}[input_sequence_filename_R2]"
+filterabund_input_interleaved="${filterabund_input}[input_sequence_filename_interleaved]"
 filterabund_cli="${!khmer_filter_abund} $filterabund_opts \
 	-o ${!filterabund_output['out']} \
 	${!filterabund_input_hashcount} \
-	${!filterabund_input_R1} \
-	${!filterabund_input_R2} \
+	${!filterabund_input_interleaved} \
 	2>${FILTERABUND_ERROR} | logger_debug &"
 
 # check if filterabund subdir exists else create 
@@ -712,72 +713,88 @@ else
 	run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
 fi
 
-##
-## Extracting and splitting paired-end reads
-##
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting and splitting paired reads ... "
-#EXTRACTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_extracting_pe.err
-#SPLITTING_PE_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${!current_sample_alias}_splitting_pe.err
 #
-#### extracting paired reads
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting paired and orphan reads ... "
-## build cli
-#declare -r khmer_extract_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_extract_paired_reads
-#eval "$(toupper ${NAMESPACE}_sample)_abundfilt_pe=${!khmer_abundfilt}.pe"
-#eval "$(toupper ${NAMESPACE}_sample)_abundfilt_se=${!khmer_abundfilt}.se"
-#declare -r khmer_abundfilt_pe=$(toupper ${NAMESPACE}_sample)_abundfilt_pe
-#declare -r khmer_abundfilt_se=$(toupper ${NAMESPACE}_sample)_abundfilt_se
+# LINK step
 #
-#khmer_extract_paired_reads_cli="cd $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR; ${!khmer_extract_paired_reads} $(basename ${!khmer_abundfilt}) 2>$(basename ${EXTRACTING_PE_ERROR}) | logger_debug &"
+# link filterabund output and extractpairs input
+eval "declare -A $(toupper ${NAMESPACE}_extractpairs_input)"
+declare -r extractpairs_input=$(toupper ${NAMESPACE}_extractpairs_input)
+eval "${extractpairs_input}=( [infile]=${!filterabund_output['out']} )"
+extractpairs_prefix_out=$(basename ${!filterabund_output['out']})
+eval "${extractpairs_input}+=( [prefix_out]=$extractpairs_prefix_out )"
+
 #
-## run cli
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] $khmer_extract_paired_reads_cli"
-#eval "$khmer_extract_paired_reads_cli" 2>$KMER_FILTER_ABUND_ERROR
-#pid=$!
-#rtrn=$?
-#eval_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] An error occured while eval $khmer_extract_paired_reads_cli."
-#exit_on_error "$KMER_FILTER_ABUND_ERROR" "$eval_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
+# Extracting paired-end reads
 #
-## go back to working dir
-#logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Go back to working directory, $WORKING_DIR." 
-#cd $WORKING_DIR
-#
-## add pid to array
-#PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-## wait until extract-paired-reads process finish then proceed to next step
-## and reinit pid array
-#pid_list_failed_msg="[$KMER_FILTER_ABUND_OUTDIR] Failed getting process status for process $p."
-#for p in "${PIDS_ARR[@]}"; do
-#    logger_trace "$(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>${KMER_FILTER_ABUND_ERROR})"
-#    rtrn=$?
-#    exit_on_error "$KMER_FILTER_ABUND_ERROR" "$pid_list_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
-#done
-#
-#### checking errors at start
-#if [[ -s ${EXTRACTING_PE_ERROR} ]] 
-#	then 
-#		logger_warn "[$KMER_FILTER_ABUND_OUTDIR] Some messages were thrown to standard error while executing ${!khmer_extract_paired_reads}. See ${EXTRACTING_PE_ERROR} file for more details."
-#	if [[ -n $(grep "Error" $EXTRACTING_PE_ERROR) ]]; then
-#		cat $EXTRACTING_PE_ERROR| logger_warn
-#		logger_fatal $eval_failed_msg
-#		exit 1
-#	fi
-#fi
-#### end checking errors at start
-#
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] Wait for all ${!khmer_extract_paired_reads} processes to finish before proceed to next step."
-#waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-#logger_info "[$KMER_FILTER_ABUND_OUTDIR] All ${!khmer_extract_paired_reads} processes finished. Will proceed to next step ..."
-#PIDS_ARR=()
-#
-#### check for extracted reads files
-#if [[ -s ${!khmer_abundfilt_pe} && -e ${!khmer_abundfilt_se} ]]; then
-#	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] Paired and orphan reads were extracted successfully into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
-#else
-#	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Failed to extract paired and orphan reads into $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR."
-#	exit 1
-#fi
-#
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Extracting paired-end and orphans reads ... "
+
+# set extractpairs vars
+EXTRACTPAIRS_SUBDIR=$FILTERABUND_SUBDIR
+EXTRACTPAIRS_SUBDIR_PATH=$FILTERABUND_SUBDIR_PATH
+EXTRACTPAIRS_ERROR="$EXTRACTPAIRS_SUBDIR_PATH/${!current_sample_alias}_extractpairs.err"
+# define extractpairs output
+eval "declare -A $(toupper ${NAMESPACE}_extractpairs_output)"
+declare -r extractpairs_output=$(toupper ${NAMESPACE}_extractpairs_output)
+eval "${extractpairs_output}=( [pe]=${!filterabund_output['out']}.pe )"
+eval "${extractpairs_output}+=( [se]=${!filterabund_output['out']}.se )"
+
+# build cli
+declare -r khmer_extract_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_extract_paired_reads
+extractpairs_input_filterabund="${extractpairs_input}[infile]"
+extractpairs_cli="cd $EXTRACTPAIRS_SUBDIR_PATH; ${!khmer_extract_paired_reads} $(basename ${!extractpairs_input_filterabund}) 2>$(basename ${EXTRACTPAIRS_ERROR}) | logger_debug &"
+
+# no need to check for extractpairs output dir, nor to create it
+# set extractpairs step input vars (see previous LINK step)
+# check for extractpairs step output vars => if already exist skip step else run step
+logger_info "[$KMER_FILTER_ABUND_OUTDIR] Checking for $EXTRACTPAIRS_SUBDIR_PATH directory ..."
+if [[ -d $EXTRACTPAIRS_SUBDIR_PATH ]]; then
+	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $EXTRACTPAIRS_SUBDIR_PATH directory already exists. Will check for already existing output files."
+
+	# check for existing output files
+	filterabund="${extractpairs_input}[prefix_out]"
+	filterabund_pe="${!filterabund}.pe"
+	filterabund_se="${!filterabund}.se"
+	extractpairs_skip=false
+	## pe : mandatory
+	if [[ -s ${filterabund_pe} ]]; then
+		extractpairs_skip=true
+		logger_info "[$EXTRACTPAIRS_SUBDIR] Output file already exists: ${filterabund_pe}."
+	else
+		extractpairs_skip=false
+		logger_warn "[$EXTRACTPAIRS_SUBDIR] Output file, ${filterabund_pe}, does not exist. Should run extractpairs step."
+	fi
+	## se : not mandatory
+	if [[ -s ${filterabund_se} ]]; then
+		#extractpairs_skip=true
+		logger_info "[$EXTRACTPAIRS_SUBDIR] Output file already exists: ${filterabund_se}."
+	else
+		#extractpairs_skip=false
+		logger_warn "[$EXTRACTPAIRS_SUBDIR] Output file, ${filterabund_se}, does not exist. Maybe, should run extractpairs step."
+	fi
+	
+	# run or skip step
+	case $extractpairs_skip in
+		# skip
+		(true) 
+			logger_info "[$EXTRACTPAIRS_SUBDIR] Skip extractpairs step."	
+			;;
+		# run
+		(false)
+			logger_info "[$EXTRACTPAIRS_SUBDIR] Will run extractpairs step."
+			run_cli -c "$extractpairs_cli" -t "$EXTRACTPAIRS_SUBDIR" -e "$EXTRACTPAIRS_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+			;;
+	esac
+else
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] The $EXTRACTPAIRS_SUBDIR_PATH directory does not exist."
+	logger_fatal "[$KMER_FILTER_ABUND_OUTDIR] Cannot run the extractpairs step."
+
+	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$EXTRACTPAIRS_SUBDIR_PATH directory does not exist." 1 "" $SESSION_TAG $EMAIL
+fi
+
+### TODO ###
+# update debug/log file paths: append the working dir absolute path to fix log file path error msgs
+
+
 #### splitting paired reads
 #logger_info "[$KMER_FILTER_ABUND_OUTDIR] Splitting paired reads ... "
 ## build cli
