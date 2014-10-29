@@ -119,6 +119,8 @@ SUPPORTED_ASSEMBLERS=( metavelvet )
 SUPPORTED_SCAFFOLDERS=( metavelvet )
 ASSEMBLER_DEFAULT=metavelvet
 SCAFFOLDER_DEFAULT=metavelvet
+ASSEMBLER=$ASSEMBLER_DEFAULT
+SCAFFOLDER=$SCAFFOLDER_DEFAULT
 
 ### USAGE ###
 Usage()
@@ -143,12 +145,12 @@ Mandatory:
 
 Options:
 -C|--kmer_abund_cutoff INT              The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) 
-										corresponding to errors and contaminants. This value overrides the one given 
-										in the CONFIG_FILE.
--A|--assembler ASSEMBLER				The assembler, given by ASSEMBLER, to use. [default: $ASSEMBLER_DEFAULT]
-										Supported list of assemblers: "${SUPPORTED_ASSEMBLERS[@]}"
--S|--scaffolder SCAFFOLDER				The scaffolder, given by SCAFFOLDER, to use. [default: $SCAFFOLDER_DEFAULT]
-										Supported list of scaffolders: "${SUPPORTED_SCAFFOLDERS[@]}"
+                                        corresponding to errors and contaminants. This value overrides the one given 
+                                        in the CONFIG_FILE .
+-A|--assembler ASSEMBLER                The assembler, given by ASSEMBLER, to use. [default: $ASSEMBLER_DEFAULT]
+                                        Supported list of assemblers: "${SUPPORTED_ASSEMBLERS[@]}"
+-S|--scaffolder SCAFFOLDER              The scaffolder, given by SCAFFOLDER, to use. [default: $SCAFFOLDER_DEFAULT]
+                                        Supported list of scaffolders: "${SUPPORTED_SCAFFOLDERS[@]}"
 -d|--debug                              Enable debugging mode in the console.
 -e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
 -h|--help                               Displays this message.
@@ -158,7 +160,7 @@ Options:
 
 ### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately;
-CONFIGURE_OPTS=`getopt -o hc:C:o:e:d --long help,config_file:,out_dir:,kmer_abund_cutoff:,debug,email_address: \
+CONFIGURE_OPTS=`getopt -o hc:A:S:C:o:e:d --long help,config_file:,assembler:,scaffolder:,out_dir:,kmer_abund_cutoff:,debug,email_address: \
     -n 'mitology-pipeline.sh' -- "$@"`
 
 if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
@@ -171,6 +173,8 @@ while true; do
         -h | --help ) Usage >&2; exit 1;;
         -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
         -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
+		-A | --assembler ) ASSEMBLER="$2"; shift 2 ;;
+		-S | --scaffolder ) SCAFFOLDER="$2"; shift 2 ;;
 		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -d | --debug )
                     appender_setLevel console DEBUG;
@@ -186,6 +190,30 @@ done
 if [[ ! -s $CONFIGFILE ]]; then
     logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
     exit 1;
+fi
+
+if [[ -z $ASSEMBLER ]]; then
+	logger_warn "Assembler string must be not null. See Usage with --help option."
+else
+	# check if assembler is supported else use default
+	if [[ ! $(elementIn "$ASSEMBLER" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then 
+		ASSEMBLER=$ASSEMBLER_DEFAULT
+		logger_warn "Given assembler, $ASSEMBLER, is not currently supported. Will use the default one: $ASSEMBLER_DEFAULT ."
+	else
+		logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER ."
+	fi
+fi
+
+if [[ -z $SCAFFOLDER ]]; then
+	logger_warn "Scaffolder string must be not null. See Usage with --help option."
+else
+	# check if scaffolder is supported else use default
+	if [[ ! $(elementIn "$SCAFFOLDER" "${SUPPORTED_SCAFFOLDERS[@]}") ]]; then
+		SCAFFOLDER=$SCAFFOLDER_DEFAULT
+		logger_warn "Given scaffolder, $SCAFFOLDER, is not currently supported. Will use the default one: $SCAFFOLDER_DEFAULT ."
+	else
+		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER ."
+	fi
 fi
 
 if [[ -z $OUTPUT_DIR ]]; then
