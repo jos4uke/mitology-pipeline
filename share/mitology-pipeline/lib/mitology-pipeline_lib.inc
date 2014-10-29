@@ -61,6 +61,9 @@ run_cli() {
 	if [[ ! -d $(dirname $my_cli_err) ]]; then logger_fatal "[run_cli] Parent directory of the command line error file, $my_cli_err, must exist. See Usage with --help option."; exit 1; fi
 	if [[ ! -d $(dirname $my_eval_err) ]]; then logger_fatal "[run_cli] Parent directory of the eval command line error file, $my_eval_err, must exist. See Usage with --help option."; exit 1; fi
 	
+	# current directory
+	local CWD=$(pwd)
+
 	# cli prefix to remove
 	local prefix="cd*;[[:space:]]"
 	
@@ -69,12 +72,12 @@ run_cli() {
 	#
 	# logging calls resolution depend on parent script which is supposed to load log4sh
 	logger_debug "[$my_tag] $my_cli"
-	eval  "$my_cli" 2>$my_eval_err
+	eval  "$my_cli" 2>$CWD/$my_eval_err
 	local pid=$!
 	local rtrn=$?
 	local eval_failed_msg="[$my_tag] An error occured while eval $my_cli command line."
 	# GLOBALS: $OUTPUT_DIR, $LOG_DIR, $DEBUGFILE, $SESSION_TAG, $EMAIL, $PIDS_ARR
-	exit_on_error "$my_eval_err" "$eval_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+	exit_on_error "$CWD/$my_eval_err" "$eval_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 	
 	# add pid to array
 	local PIDS_ARR=()
@@ -82,16 +85,16 @@ run_cli() {
 	# wait until command line process finish and reinit pid array
 	for p in "${PIDS_ARR[@]}"; do
 		local pid_list_failed_msg="[$my_tag] Failed getting process status for process $p."
-		logger_trace "[$my_tag] $(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>$my_eval_err)"
+		logger_trace "[$my_tag] $(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>$CWD/$my_eval_err)"
 		local rtrn=$?
-		exit_on_error "$my_eval_err" "$pid_list_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+		exit_on_error "$CWD/$my_eval_err" "$pid_list_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 	done
-	logger_info "[$my_tag] Wait for all $(echo "${my_cli##$prefix}" | cut -d" " -f1) processes to finish before proceeding to next step."
+	logger_info "[$my_tag] Wait for all $(echo -e "${my_cli##$prefix}" | cut -d" " -f1) processes to finish before proceeding to next step."
 	waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
 	if [[ -s $my_cli_err ]]; then
 		logger_warn "[$my_tag] Some messages were thrown to standard error while executing $my_cli . See $my_cli_err for more details."
 	fi
-	logger_info "[$my_tag] All $(echo "$my_cli" | cut -d" " -f1) processes finished."
+	logger_info "[$my_tag] All $(echo -e "${my_cli##$prefix}" | cut -d" " -f1) processes finished."
 	PIDS_ARR=()
 }
 
