@@ -61,6 +61,9 @@ run_cli() {
 	if [[ ! -d $(dirname $my_cli_err) ]]; then logger_fatal "[run_cli] Parent directory of the command line error file, $my_cli_err, must exist. See Usage with --help option."; exit 1; fi
 	if [[ ! -d $(dirname $my_eval_err) ]]; then logger_fatal "[run_cli] Parent directory of the eval command line error file, $my_eval_err, must exist. See Usage with --help option."; exit 1; fi
 	
+	# cli prefix to remove
+	local prefix="cd*;[[:space:]]"
+	
 	#
 	# run
 	#
@@ -83,7 +86,7 @@ run_cli() {
 		local rtrn=$?
 		exit_on_error "$my_eval_err" "$pid_list_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 	done
-	logger_info "[$my_tag] Wait for all $(echo "$my_cli" | cut -d" " -f1) processes to finish before proceeding to next step."
+	logger_info "[$my_tag] Wait for all $(echo "${my_cli##$prefix}" | cut -d" " -f1) processes to finish before proceeding to next step."
 	waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
 	if [[ -s $my_cli_err ]]; then
 		logger_warn "[$my_tag] Some messages were thrown to standard error while executing $my_cli . See $my_cli_err for more details."
