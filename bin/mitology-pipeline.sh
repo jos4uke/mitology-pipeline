@@ -114,6 +114,12 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+# supported assemblers/scaffolders list
+SUPPORTED_ASSEMBLERS=( metavelvet )
+SUPPORTED_SCAFFOLDERS=( metavelvet )
+ASSEMBLER_DEFAULT=metavelvet
+SCAFFOLDER_DEFAULT=metavelvet
+
 ### USAGE ###
 Usage()
 {
@@ -128,7 +134,7 @@ you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 
-Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-d|--debug] [-C|--kmer_abund_cutoff INT] [-e|--email_address VALID_EMAIL_ADDR]
+Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-A|--assembler ASSEMBLER] [-S|--scaffolder SCAFFOLDER] [-d|--debug] [-C|--kmer_abund_cutoff INT] [-e|--email_address VALID_EMAIL_ADDR]
 
 Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
@@ -139,6 +145,10 @@ Options:
 -C|--kmer_abund_cutoff INT              The k-mer abundance cutoff below which k-mers are trimmed with khmer (filter_abund.py) 
 										corresponding to errors and contaminants. This value overrides the one given 
 										in the CONFIG_FILE.
+-A|--assembler ASSEMBLER				The assembler, given by ASSEMBLER, to use. [default: $ASSEMBLER_DEFAULT]
+										Supported list of assemblers: "${SUPPORTED_ASSEMBLERS[@]}"
+-S|--scaffolder SCAFFOLDER				The scaffolder, given by SCAFFOLDER, to use. [default: $SCAFFOLDER_DEFAULT]
+										Supported list of scaffolders: "${SUPPORTED_SCAFFOLDERS[@]}"
 -d|--debug                              Enable debugging mode in the console.
 -e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
 -h|--help                               Displays this message.
