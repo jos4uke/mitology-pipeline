@@ -237,7 +237,7 @@ fi
 
 logger_addAppender debuggerF
 appender_setType debuggerF FileAppender
-appender_file_setFile debuggerF $OUTPUT_DIR/$LOG_DIR/$DEBUGFILE
+appender_file_setFile debuggerF $(realpath $OUTPUT_DIR)/$LOG_DIR/$DEBUGFILE
 appender_setLevel debuggerF DEBUG
 appender_setLayout debuggerF PatternLayout
 appender_setPattern debuggerF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
@@ -466,7 +466,7 @@ fi
 KMER_FILTER_ABUND_DEBUGF=${KMER_FILTER_ABUND_OUTDIR}_debug.log
 logger_addAppender kmerFiltAbundF
 appender_setType kmerFiltAbundF FileAppender
-appender_file_setFile kmerFiltAbundF $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF
+appender_file_setFile kmerFiltAbundF $(realpath $OUTPUT_DIR)/$KMER_FILTER_ABUND_OUTDIR/$KMER_FILTER_ABUND_DEBUGF
 appender_setLevel kmerFiltAbundF DEBUG
 appender_setLayout kmerFiltAbundF PatternLayout
 appender_setPattern kmerFiltAbundF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
