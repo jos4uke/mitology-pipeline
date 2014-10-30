@@ -197,8 +197,10 @@ if [[ -z $ASSEMBLER ]]; then
 else
 	# check if assembler is supported else use default
 	if [[ ! $(elementIn "$ASSEMBLER" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then 
-		ASSEMBLER=$ASSEMBLER_DEFAULT
 		logger_warn "Given assembler, $ASSEMBLER, is not currently supported. Will use the default one: $ASSEMBLER_DEFAULT ."
+		ASSEMBLER=$ASSEMBLER_DEFAULT
+	elif [[ "$ASSEMBLER" -eq "$ASSEMBLER_DEFAULT" ]]; then
+		logger_info "$ASSEMBLER is the default assembler."
 	else
 		logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER ."
 	fi
@@ -209,13 +211,15 @@ if [[ -z $SCAFFOLDER ]]; then
 else
 	# check if scaffolder is supported else use default
 	if [[ ! $(elementIn "$SCAFFOLDER" "${SUPPORTED_SCAFFOLDERS[@]}") ]]; then
-		SCAFFOLDER=$SCAFFOLDER_DEFAULT
 		logger_warn "Given scaffolder, $SCAFFOLDER, is not currently supported. Will use the default one: $SCAFFOLDER_DEFAULT ."
+		SCAFFOLDER=$SCAFFOLDER_DEFAULT
+	elif [[ "$SCAFFOLDER" -eq "$SCAFFOLDER_DEFAULT" ]]; then
+		logger_info "$SCAFFOLDER is the default scaffolder."
 	else
 		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER ."
 	fi
 fi
-
+exit 0
 if [[ -z $OUTPUT_DIR ]]; then
 	logger_fatal "Output directory must be not null. See Usage with --help option.";
 	exit 1;
@@ -231,9 +235,15 @@ fi
 # SET GENOME PATH AND INDEXES
 # CHECKING SAMPLE
 # K-MER ABUNDANCE FILTERING: FILTERED READS
-# ASSEMBLY: CONTIGING AND SCAFFOLDING (OPTIONAL)
-# DOT PLOT AGAINST REFERENCE GENOME
-# INTERNAL CONSISTENCY: MAPPING FILTERED READS AGAINST CONTIGS AND SCAFFOLDS (OPTIONAL)
+# ASSEMBLY: 
+# - CONTIGING 
+# - SCAFFOLDING
+# STATS:
+# - COMPASS
+# - QUAST
+# ALIGNMENTS: 
+# - NUCMER (DOT PLOT AGAINST ONE REFERENCE GENOME)
+# - BWA (FOR INTERNAL CONSISTENCY: MAPPING FILTERED READS AGAINST CONTIGS AND SCAFFOLDS)
 # CLEANING
 
 #===================
