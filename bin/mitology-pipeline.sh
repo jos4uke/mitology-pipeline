@@ -241,6 +241,7 @@ fi
 # STATS:
 # - COMPASS
 # - QUAST
+# - AMOS/ASTATS
 # ALIGNMENTS: 
 # - NUCMER (DOT PLOT AGAINST ONE REFERENCE GENOME)
 # - BWA (FOR INTERNAL CONSISTENCY: MAPPING FILTERED READS AGAINST CONTIGS AND SCAFFOLDS)
@@ -920,8 +921,6 @@ fi
 ### close appender
 appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
 
-
-### TODO ###
 
 #=====================================
 # ASSEMBLY: CONTIGING AND SCAFFOLDING 
