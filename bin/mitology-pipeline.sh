@@ -352,7 +352,7 @@ logger_info "[Override config] checking for options to override loaded config pa
 ### khmer filter abund cutoff
 declare -r khmer_filter_abund_cutoff=$(toupper ${NAMESPACE}_khmer_filter_abund)_C
 if [[ -z ${!khmer_filter_abund_cutoff} ]]; then
-	logger_warn "[Override config] Config khmer filter abundance cutoff variable, ${khmer_filter_abund_cutoff}, is null. Search for option to override ..."
+	logger_warn "[Override config] Config khmer filter abundance cutoff variable, ${!khmer_filter_abund_cutoff}, is null. Search for option to override ..."
 	if [[ -z $KMER_ABUND_CUTOFF ]]; then
 		logger_fatal "[Override config] Khmer abundance cutoff option value is null. Please fill in a cutoff value in config file or on the command line, see usage with --help option."
 		exit 1
@@ -369,6 +369,29 @@ else
 		logger_info "[Override config] Not overriding the config khmer filter abundance cutoff value, ${!khmer_filter_abund_cutoff}."
 	fi
 fi
+
+### assembler
+declare -r CFG_ASSEMBLER=$(toupper ${NAMESPACE}_contig_assembler)_name
+if [[ -z ${CFG_ASSEMBLER} ]]; then
+	logger_warn "[Override config] Config contig_assembler variable, ${!CFG_ASSEMBLER}, is null. Search for option to override ..."
+	if [[ -z $ASSEMBLER ]]; then
+		logger_fatal "[Override config] User provided assembler option value is null. Please fill in a contig assembler name value in config file or on the command line, see usage with --help option."
+		exit 1
+	else
+		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER"
+		logger_info "[Override config] Overrides config contig_assembler name value, NULL, by ${!CFG_ASSEMBLER}"
+	fi
+else
+	if [[ -n $ASSEMBLER ]]; then
+		assembler_old=${!CFG_ASSEMBLER}
+		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER"
+		logger_info "[Override config] Overrides config contig_assembler name value, $assembler_old, by ${!CFG_ASSEMBLER}"
+	else
+		logger_info "[Override config] Not overriding the config contig_assembler name value, ${!CFG_ASSEMBLER}."
+	fi
+fi
+
+
 
 #=============================================
 # REFERENCE GENOME SEQUENCE AND INDEXES PATHS
