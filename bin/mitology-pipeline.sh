@@ -57,7 +57,9 @@ SESSION_TAG=${NAMESPACE}_${USER}_${SESSION_ID}
 
 LOG_DIR="log"
 DEBUGFILE=${SESSION_TAG}.log
-ERROR_TMP="/tmp/$(basename ${0%.*})_error_${SESSION_TAG}.log"
+ERROR_TMP_MODEL="/tmp/$(basename ${0%.*})_error_${SESSION_TAG}.XXXXXX"
+ERROR_TMP=$(mktemp "$ERROR_TMP_MODEL")
+[[ $? -eq 0 ]] && echo "Execute $(basename ${0%.*})">>$ERROR_TMP || exit 1 
 
 [[ $VERSION -eq "dev" ]] && PROG_PATH=$(realpath $(dirname $0));PIPELINE_USER_CONFIG=${PROG_PATH}/../share/mitology-pipeline/etc/mitology-pipeline_user.config || PIPELINE_USER_CONFIG=/usr/local/share/mitology-pipeline/etc/mitology-pipeline_user.config
 
@@ -219,7 +221,7 @@ else
 		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER ."
 	fi
 fi
-exit 0
+
 if [[ -z $OUTPUT_DIR ]]; then
 	logger_fatal "Output directory must be not null. See Usage with --help option.";
 	exit 1;
