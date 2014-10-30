@@ -528,6 +528,9 @@ appender_exists kmerFiltAbundF && logger_info "[$KMER_FILTER_ABUND_OUTDIR] Debug
 ### error handling
 KMER_FILTER_ABUND_ERROR=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/${KMER_FILTER_ABUND_OUTDIR}.err
 
+### Substep counter
+KMER_FILT_ABUND_COUNTER=0
+
 #
 # LINK step
 #
@@ -542,7 +545,8 @@ declare -r interleaving_input=$(toupper ${NAMESPACE}_interleaving_input)
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Interleaving reads ..."
 
 # set interleaving vars
-INTERLEAVING_SUBDIR="1.Interleaving"
+((KMER_FILT_ABUND_COUNTER+=1))
+INTERLEAVING_SUBDIR="${KMER_FILT_ABUND_COUNTER}.Interleaving"
 INTERLEAVING_SUBDIR_PATH=$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$INTERLEAVING_SUBDIR
 INTERLEAVING_ERROR=$INTERLEAVING_SUBDIR_PATH/${!current_sample_alias}_interleaved.err
 ## define interleaving output
@@ -597,7 +601,8 @@ declare -r hashcount_input=$(toupper ${NAMESPACE}_hashcount_input)
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Counting k-mers ..."
 
 # set hashcount vars
-HASHCOUNT_SUBDIR="2.Hashcount"
+((KMER_FILT_ABUND_COUNTER+=1))
+HASHCOUNT_SUBDIR="${KMER_FILT_ABUND_COUNTER}.Hashcount"
 HASHCOUNT_SUBDIR_PATH="$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$HASHCOUNT_SUBDIR"
 HASHCOUNT_ERROR=$HASHCOUNT_SUBDIR_PATH/${!current_sample_alias}_counting.err
 declare -r khmer_load_into_counting_k=$(toupper ${NAMESPACE}_khmer_load_into_counting)_k
@@ -709,7 +714,8 @@ eval "${filterabund_input}+=([input_sequence_filename_interleaved]=${!interleavi
 logger_info "[$KMER_FILTER_ABUND_OUTDIR] Filtering k-mer abundance ..."
 
 # set filterabund vars
-FILTERABUND_SUBDIR="3.Filterabund"
+((KMER_FILT_ABUND_COUNTER+=1))
+FILTERABUND_SUBDIR="${KMER_FILT_ABUND_COUNTER}.Filterabund"
 FILTERABUND_SUBDIR_PATH="$OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR/$FILTERABUND_SUBDIR"
 FILTERABUND_ERROR="${FILTERABUND_SUBDIR_PATH}/${!current_sample_alias}_filterabund.err"
 # define filterabund output
