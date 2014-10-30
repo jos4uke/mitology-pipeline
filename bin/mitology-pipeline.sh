@@ -117,12 +117,10 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # supported assemblers/scaffolders list
-SUPPORTED_ASSEMBLERS=( metavelvet )
-SUPPORTED_SCAFFOLDERS=( metavelvet )
-ASSEMBLER_DEFAULT=metavelvet
-SCAFFOLDER_DEFAULT=metavelvet
-ASSEMBLER=$ASSEMBLER_DEFAULT
-SCAFFOLDER=$SCAFFOLDER_DEFAULT
+SUPPORTED_ASSEMBLERS=( meta-velvetg )
+SUPPORTED_SCAFFOLDERS=( meta-velvetg )
+ASSEMBLER_DEFAULT=meta-velvetg
+SCAFFOLDER_DEFAULT=meta-velvetg
 
 ### USAGE ###
 Usage()
@@ -189,20 +187,26 @@ while true; do
 done
 
 ### VALIDATION ###
+
+# mandatory
 if [[ ! -s $CONFIGFILE ]]; then
     logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
     exit 1;
 fi
 
+if [[ -z $OUTPUT_DIR ]]; then
+	logger_fatal "Output directory must be not null. See Usage with --help option.";
+	exit 1;
+fi
+
+# not mandatory
 if [[ -z $ASSEMBLER ]]; then
 	logger_warn "Assembler string must be not null. See Usage with --help option."
 else
 	# check if assembler is supported else use default
 	if [[ ! $(elementIn "$ASSEMBLER" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then 
-		logger_warn "Given assembler, $ASSEMBLER, is not currently supported. Will use the default one: $ASSEMBLER_DEFAULT ."
-		ASSEMBLER=$ASSEMBLER_DEFAULT
-	elif [[ "$ASSEMBLER" -eq "$ASSEMBLER_DEFAULT" ]]; then
-		logger_info "$ASSEMBLER is the default assembler."
+		logger_warn "Given assembler, $ASSEMBLER, is not currently supported. See Usage with --help option."
+		exit 1
 	else
 		logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER ."
 	fi
@@ -213,19 +217,13 @@ if [[ -z $SCAFFOLDER ]]; then
 else
 	# check if scaffolder is supported else use default
 	if [[ ! $(elementIn "$SCAFFOLDER" "${SUPPORTED_SCAFFOLDERS[@]}") ]]; then
-		logger_warn "Given scaffolder, $SCAFFOLDER, is not currently supported. Will use the default one: $SCAFFOLDER_DEFAULT ."
-		SCAFFOLDER=$SCAFFOLDER_DEFAULT
-	elif [[ "$SCAFFOLDER" -eq "$SCAFFOLDER_DEFAULT" ]]; then
-		logger_info "$SCAFFOLDER is the default scaffolder."
+		logger_warn "Given scaffolder, $SCAFFOLDER, is not currently supported. See Usage with --help option."
+		exit 1
 	else
 		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER ."
 	fi
 fi
 
-if [[ -z $OUTPUT_DIR ]]; then
-	logger_fatal "Output directory must be not null. See Usage with --help option.";
-	exit 1;
-fi
 
 #################
 # PIPELINE STEPS
@@ -930,16 +928,19 @@ fi
 appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
 
 
-#=====================================
-# ASSEMBLY: CONTIGING AND SCAFFOLDING 
-#=====================================
+#========================================
+# 02.ASSEMBLY: CONTIGING AND SCAFFOLDING 
+#========================================
 
+# STEPS
+## CONTIGING
+## SCAFFOLDING
 
+#
+# CONTIGING
+#
 
-
-
-
-
+# 
 
 
 
