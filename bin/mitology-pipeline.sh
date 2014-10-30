@@ -372,7 +372,7 @@ fi
 
 ### assembler
 declare -r CFG_ASSEMBLER=$(toupper ${NAMESPACE}_contig_assembler)_name
-if [[ -z ${CFG_ASSEMBLER} ]]; then
+if [[ -z ${!CFG_ASSEMBLER} ]]; then
 	logger_warn "[Override config] Config contig_assembler variable, ${!CFG_ASSEMBLER}, is null. Search for option to override ..."
 	if [[ -z $ASSEMBLER ]]; then
 		logger_fatal "[Override config] User provided assembler option value is null. Please fill in a contig assembler name value in config file or on the command line, see usage with --help option."
@@ -391,6 +391,26 @@ else
 	fi
 fi
 
+### scaffolder
+declare -r CFG_SCAFFOLDER=$(toupper ${NAMESPACE}_scaffolder)_name
+if [[ -z ${!CFG_SCAFFOLDER} ]]; then
+	logger_warn "[Override config] Config scaffolder variable, ${!CFG_SCAFFOLDER}, is null. Search for option to override ..."
+	if [[ -z $SCAFFOLDER ]]; then
+		logger_fatal "[Override config] User provided scaffolder option value is null. Please fill in a scaffolder name value in config file or on the command line, see usage with --help option."
+		exit 1
+	else
+		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER"
+		logger_info "[Override config] Overrides config scaffolder name value, NULL, by ${!CFG_SCAFFOLDER}"
+	fi
+else
+	if [[ -n $SCAFFOLDER ]]; then
+		scaffolder_old=${!CFG_SCAFFOLDER}
+		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER"
+		logger_info "[Override config] Overrides config scaffolder name value, $scaffolder_old, by ${!CFG_SCAFFOLDER}"
+	else
+		logger_info "[Override config] Not overriding the config scaffolder name value, ${!CFG_SCAFFOLDER}."
+	fi
+fi
 
 
 #=============================================
