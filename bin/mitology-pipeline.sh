@@ -173,7 +173,7 @@ while true; do
         -h | --help ) Usage >&2; exit 1;;
         -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
         -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
-		-A | --assembler ) ASSEMBLER="$2"; shift 2 ;;
+		-A | --assembler ) ASSEMBLER_CLI="$2"; shift 2 ;;
 		-S | --scaffolder ) SCAFFOLDER="$2"; shift 2 ;;
 		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -d | --debug )
@@ -200,15 +200,15 @@ if [[ -z $OUTPUT_DIR ]]; then
 fi
 
 # not mandatory
-if [[ -z $ASSEMBLER ]]; then
+if [[ -z $ASSEMBLER_CLI ]]; then
 	logger_warn "Assembler string must be not null. See Usage with --help option."
 else
 	# check if assembler is supported else use default
-	if [[ ! $(elementIn "$ASSEMBLER" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then 
-		logger_warn "Given assembler, $ASSEMBLER, is not currently supported. See Usage with --help option."
+	if [[ ! $(elementIn "$ASSEMBLER_CLI" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then 
+		logger_warn "Given assembler, $ASSEMBLER_CLI, is not currently supported. See Usage with --help option."
 		exit 1
 	else
-		logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER ."
+		logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER_CLI ."
 	fi
 fi
 
@@ -374,17 +374,17 @@ fi
 declare -r CFG_ASSEMBLER=$(toupper ${NAMESPACE}_contig_assembler)_name
 if [[ -z ${!CFG_ASSEMBLER} ]]; then
 	logger_warn "[Override config] Config contig_assembler variable, ${!CFG_ASSEMBLER}, is null. Search for option to override ..."
-	if [[ -z $ASSEMBLER ]]; then
+	if [[ -z $ASSEMBLER_CLI ]]; then
 		logger_fatal "[Override config] User provided assembler option value is null. Please fill in a contig assembler name value in config file or on the command line, see usage with --help option."
 		exit 1
 	else
-		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER"
+		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER_CLI"
 		logger_info "[Override config] Overrides config contig_assembler name value, NULL, by ${!CFG_ASSEMBLER}"
 	fi
 else
-	if [[ -n $ASSEMBLER ]]; then
+	if [[ -n $ASSEMBLER_CLI ]]; then
 		assembler_old=${!CFG_ASSEMBLER}
-		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER"
+		eval "$(toupper ${NAMESPACE}_contig_assembler)_name=$ASSEMBLER_CLI"
 		logger_info "[Override config] Overrides config contig_assembler name value, $assembler_old, by ${!CFG_ASSEMBLER}"
 	else
 		logger_info "[Override config] Not overriding the config contig_assembler name value, ${!CFG_ASSEMBLER}."
@@ -1008,12 +1008,16 @@ appender_exists assemblyDebugF && logger_info "[$ASSEMBLY_OUTDIR] Debugging info
 ### error handling
 ASSEMBLY_ERROR=$OUTPUT_DIR/$ASSEMBLY_OUTDIR/${ASSEMBLY_DEBUGF}.err
 
-
-### TODO ###
-
 #
 # CONTIGING
 #
+
+declare -r 
+
+
+
+
+### TODO ###
 
 # 
 # SCAFFOLDING
