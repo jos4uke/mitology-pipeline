@@ -174,7 +174,7 @@ while true; do
         -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
         -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
 		-A | --assembler ) ASSEMBLER_CLI="$2"; shift 2 ;;
-		-S | --scaffolder ) SCAFFOLDER="$2"; shift 2 ;;
+		-S | --scaffolder ) SCAFFOLDER_CLI="$2"; shift 2 ;;
 		-C | --kmer_abund_cutoff ) KMER_ABUND_CUTOFF="$2"; shift 2;;
         -d | --debug )
                     appender_setLevel console DEBUG;
@@ -212,15 +212,15 @@ else
 	fi
 fi
 
-if [[ -z $SCAFFOLDER ]]; then
+if [[ -z $SCAFFOLDER_CLI ]]; then
 	logger_warn "Scaffolder string must be not null. See Usage with --help option."
 else
 	# check if scaffolder is supported else use default
-	if [[ ! $(elementIn "$SCAFFOLDER" "${SUPPORTED_SCAFFOLDERS[@]}") ]]; then
-		logger_warn "Given scaffolder, $SCAFFOLDER, is not currently supported. See Usage with --help option."
+	if [[ ! $(elementIn "$SCAFFOLDER_CLI" "${SUPPORTED_SCAFFOLDERS[@]}") ]]; then
+		logger_warn "Given scaffolder, $SCAFFOLDER_CLI, is not currently supported. See Usage with --help option."
 		exit 1
 	else
-		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER ."
+		logger_info "Replace the default scaffolder, $SCAFFOLDER_DEFAULT, by the user provided scaffolder, $SCAFFOLDER_CLI ."
 	fi
 fi
 
@@ -395,17 +395,17 @@ fi
 declare -r CFG_SCAFFOLDER=$(toupper ${NAMESPACE}_scaffolder)_name
 if [[ -z ${!CFG_SCAFFOLDER} ]]; then
 	logger_warn "[Override config] Config scaffolder variable, ${!CFG_SCAFFOLDER}, is null. Search for option to override ..."
-	if [[ -z $SCAFFOLDER ]]; then
+	if [[ -z $SCAFFOLDER_CLI ]]; then
 		logger_fatal "[Override config] User provided scaffolder option value is null. Please fill in a scaffolder name value in config file or on the command line, see usage with --help option."
 		exit 1
 	else
-		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER"
+		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER_CLI"
 		logger_info "[Override config] Overrides config scaffolder name value, NULL, by ${!CFG_SCAFFOLDER}"
 	fi
 else
-	if [[ -n $SCAFFOLDER ]]; then
+	if [[ -n $SCAFFOLDER_CLI ]]; then
 		scaffolder_old=${!CFG_SCAFFOLDER}
-		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER"
+		eval "$(toupper ${NAMESPACE}_scaffolder)_name=$SCAFFOLDER_CLI"
 		logger_info "[Override config] Overrides config scaffolder name value, $scaffolder_old, by ${!CFG_SCAFFOLDER}"
 	else
 		logger_info "[Override config] Not overriding the config scaffolder name value, ${!CFG_SCAFFOLDER}."
