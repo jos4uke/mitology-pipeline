@@ -980,13 +980,47 @@ appender_exists kmerFiltAbundF && appender_close kmerFiltAbundF
 ## SCAFFOLDING
 
 #
+# Create Assembly output directory
+#
+ASSEMBLY_OUTDIR="02.Assemblies"
+logger_info "Creating $ASSEMBLY_OUTDIR directory ..."
+if [[ -d $OUTPUT_DIR/$ASSEMBLY_OUTDIR ]]; then
+	logger_debug "OK $ASSEMBLY_OUTDIR directory already exists. Will output all assembly output files in this directory."
+else
+	mkdir $OUTPUT_DIR/$ASSEMBLY_OUTDIR 2>$ERROR_TMP
+	rtrn=$?
+	out_dir_failed_msg="[$ASSEMBLY_OUTDIR] Failed. Assembly output directory, $ASSEMBLY_OUTDIR, was not created."
+	[[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+	exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+	logger_debug "[$ASSEMBLY_OUTDIR] OK $ASSEMBLY_OUTDIR directory was created successfully. Will output all output files in this directory."
+fi
+	
+### Enable the assembly debug logger
+ASSEMBLY_DEBUGF=${ASSEMBLY_DEBUGF}_debug.log
+logger_addAppender assemblyDebugF
+appender_setType assemblyDebugF FileAppender
+appender_file_setFile assemblyDebugF $(realpath $OUTPUT_DIR)/$ASSEMBLY_OUTDIR/$ASSEMBLY_DEBUGF
+ppender_setLevel assemblyDebugF DEBUG
+appender_setLayout assemblyDebugF PatternLayout
+appender_setPattern assemblyDebugF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions assemblyDebugF
+appender_exists assemblyDebugF && logger_info "[$ASSEMBLY_OUTDIR] Debugging infos on assembly will be output to $OUTPUT_DIR/$ASSEMBLY_OUTDIR/$ASSEMBLY_DEBUGF file." || logger_warn "The assemblyDebugF debugger file appender was not enabled. Maybe a log4sh error occured."
+### error handling
+ASSEMBLY_ERROR=$OUTPUT_DIR/$ASSEMBLY_OUTDIR/${ASSEMBLY_DEBUGF}.err
+
+
+### TODO ###
+
+#
 # CONTIGING
 #
 
 # 
+# SCAFFOLDING
+#
 
-
-
+### close assembly debug logger
+appender_exists assemblyDebugF && appender_close assemblyDebugF
 
 #=====
 # END
