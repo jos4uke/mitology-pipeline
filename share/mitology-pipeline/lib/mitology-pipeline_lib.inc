@@ -12,6 +12,7 @@
 #
 # Array utils
 #
+
 #----------------------------------------------------------
 # Function: elementIn 
 # Purpose: Tells if the given string is in the array and returns the matched value 
@@ -19,6 +20,15 @@ elementIn() {
 	local e
 	for e in "${@:2}"; do [[ "$e" == "$1" ]] && echo "$1"; return 0; done
     return 1
+}
+
+#----------------------------------------------------------
+# Function: shortenAndSortOptions
+# Purpose: Will shorten options (-option) output from buildCommandLineOptions function (--option)
+#          as velveth/velvetg/meta-velvetg required it (not ANSI compliant), and sort them alphabetically
+#          before returning the array of options
+shortenAndSortOptions() {
+	echo "${@}" | sed -e 's/^--/-/' -e 's/ --/\n-/g' | sort
 }
 
 #
