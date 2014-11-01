@@ -1110,14 +1110,14 @@ case "${!ASSEMBLER}" in
 				(false)
 					logger_info "[$contigs_by] Will run contiging step ..."
 					logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
-					#run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+					run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
 					;;
 			esac
 		else
 			# run contiging
 			logger_info "[$contigs_by] Will run contiging step ..."
 			logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
-			#run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+			run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
 		fi
 		;;
 	# put here other assemblers
