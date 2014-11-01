@@ -116,11 +116,23 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+### SCRIPTS ###
+
+# scripts path
+[[ $VERSION == "dev" ]] && SCRIPTS_PATH=$(realpath $(dirname $0))/../share/mitology-pipeline/scripts || SCRIPTS_PATH=/usr/local/share/mitology-pipeline/scripts
+
+logger_debug "[Scripts] Setting $SCRIPTS_PATH"
+
+
+### SUPPORTED ASSEMBLERS/SCAFFOLDERS ###
+
 # supported assemblers/scaffolders list
 SUPPORTED_ASSEMBLERS=( meta-velvetg )
 SUPPORTED_SCAFFOLDERS=( meta-velvetg )
 ASSEMBLER_DEFAULT=meta-velvetg
 SCAFFOLDER_DEFAULT=meta-velvetg
+
+# supported assemblers/scaffolders combinations
 
 ### USAGE ###
 Usage()
@@ -996,11 +1008,11 @@ else
 fi
 	
 ### Enable the assembly debug logger
-ASSEMBLY_DEBUGF=${ASSEMBLY_DEBUGF}_debug.log
+ASSEMBLY_DEBUGF=${ASSEMBLY_OUTDIR}_debug.log
 logger_addAppender assemblyDebugF
 appender_setType assemblyDebugF FileAppender
 appender_file_setFile assemblyDebugF $(realpath $OUTPUT_DIR)/$ASSEMBLY_OUTDIR/$ASSEMBLY_DEBUGF
-ppender_setLevel assemblyDebugF DEBUG
+appender_setLevel assemblyDebugF DEBUG
 appender_setLayout assemblyDebugF PatternLayout
 appender_setPattern assemblyDebugF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
 appender_activateOptions assemblyDebugF
@@ -1009,15 +1021,117 @@ appender_exists assemblyDebugF && logger_info "[$ASSEMBLY_OUTDIR] Debugging info
 ASSEMBLY_ERROR=$OUTPUT_DIR/$ASSEMBLY_OUTDIR/${ASSEMBLY_DEBUGF}.err
 
 #
+# LINKS step
+#
+# link kmer filter abund output to assembly input
+eval "declare -A $(toupper ${NAMESPACE}_assembly_input)"
+assembly_input=$(toupper ${NAMESPACE}_assembly_input)
+filterabund_pe="${splitpairs_input}[infile]"
+eval "${assembly_input}=( [pe]=${!filterabund_pe} )"
+filterabund_pe_1="${splitpairs_output}[pe.1]"
+eval "${assembly_input}+=( [pe_1]=${!filterabund_pe_1} )"
+filterabund_pe_2="${splitpairs_output}[pe.2]"
+eval "${assembly_input}+=( [pe_2]=${!filterabund_pe_2} )"
+filterabund_se="${extractpairs_output}[se]"
+eval "${assembly_input}+=( [se]=${!filterabund_se} )"
+declare -r assembly_k=$(toupper ${NAMESPACE}_contig_assembler)_hash_length
+eval "${assembly_input}+=( [k]=${!assembly_k} )"
+
+# 
+# ASSEMBLY
+#
+logger_info "[$ASSEMBLY_OUTDIR] De novo assembly on filtered reads ... "
+
+# set assembly vars
+filterabund_pe="${assembly_input}[pe]"
+sample_id="$(basename ${!filterabund_pe%.pe})"
+sample_assemblies_outdir="${sample_id}.assemblies"
+# define assembly
+declare -r assembly_output=$(toupper ${NAMESPACE}_assembly_output) 
+eval "${assembly_output}=( )"
+
+#
 # CONTIGING
 #
 
-declare -r 
+declare -r ASSEMBLER=$(toupper ${NAMESPACE}_contig_assembler)_name
+logger_info "[$ASSEMBLY_OUTDIR] Use ${!ASSEMBLER} as the contig assembler."
 
+# contiging output directory
+contigs_by="contiging_by_${!ASSEMBLER}"
+
+# run assembler
+case "${!ASSEMBLER}" in
+	"meta-velvetg")
+		# set assembler vars
+		klen="${assembly_input}[k]"
+		## build contiging options
+		# use meta_velvetg as written in the config file not meta-velevetg, the actual assembler name, because config parser does not allow hyphen in section name
+		contiging_opts=($(buildCommandLineOptions "meta_velvetg" "$NAMESPACE" 2>$ASSEMBLY_ERROR))
+		contiging_opts_sorted=($(shortenAndSortOptions "${contiging_opts[@]}" 2>$ASSEMBLY_ERROR))
+		contiging_opts_sorted_cat="opts"$(echo "${contiging_opts_sorted[@]}" | sed -e 's/[ =]/_/g')
+		## contiging outdir
+		CONTIGING_OUTDIR=${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/${sample_assemblies_outdir}/${contigs_by}/k${!klen}/${contiging_opts_sorted_cat}
+
+		# define expected assembler output
+		eval "declare -A $(toupper ${NAMESPACE}_assembler_output)"
+		declare -r assembler_output=$(toupper ${NAMESPACE}_assembler_output)
+		assembler_contigs=$CONTIGING_OUTDIR/meta-velvetg.contigs.fa
+		eval "${assembler_output}=( [contigs]=$assembler_contigs )"
+
+		# build cli
+		filterabund_se="${assembly_input}[se]"
+		isScaffolding=no
+		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --isScaffolding $isScaffolding 2>$ERROR_TMP | logger_debug &"
+
+		# check if contiging outdir exists 
+		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
+		# not exist: run contiging
+		logger_info "[$contigs_by] Checking for $CONTIGING_OUTDIR directory ..."
+		if [[ -d $CONTIGING_OUTDIR ]]; then
+			logger_debug "[$contigs_by] OK $CONTIGING_OUTDIR directory already exists. Will check for already existing output files."
+	
+			# check for existing output files
+			contiging_skip=false
+			## assembler_contigs : mandatory
+			if [[ -s $assembler_contigs ]]; then
+				contiging_skip=true
+				logger_info "[$contigs_by] Output file already exists: $assembler_contigs"
+			else
+				contiging_skip=false
+				logger_warn "[$contigs_by] Output file, ${assembler_contigs}, does not exist. Should run contiging step."
+			fi
+
+			# run or skip step
+			case $contiging_skip in
+				(true)
+					logger_info "[$contigs_by] Skip contiging step."
+					;;
+				(false)
+					logger_info "[$contigs_by] Will run contiging step ..."
+					logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
+					#run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+					;;
+			esac
+		else
+			# run contiging
+			logger_info "[$contigs_by] Will run contiging step ..."
+			logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
+			#run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+		fi
+		;;
+	# put here other assemblers
+esac
 
 
 
 ### TODO ###
+
+#
+# LINKS step
+#
+# case assembler/scaffolder combinations
+
 
 # 
 # SCAFFOLDING
