@@ -1082,7 +1082,7 @@ case "${!ASSEMBLER}" in
 		# build cli
 		filterabund_se="${assembly_input}[se]"
 		scaffold=no
-		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold 2>$ERROR_TMP | logger_debug &"
+		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config 2>$ERROR_TMP | logger_debug &"
 
 		# check if contiging outdir exists 
 		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
