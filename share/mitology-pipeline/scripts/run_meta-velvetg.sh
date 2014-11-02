@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 
 #
 # run_meta-velvetg.sh
@@ -62,7 +62,7 @@ ERROR_TMP_MODEL="/tmp/${PROG_NAME%.*}_error_${SESSION_TAG}.XXXXXX"
 ERROR_TMP=$(mktemp "$ERROR_TMP_MODEL")
 [[ $? -eq 0 ]] && echo "Execute ${PROG_NAME%.*}"| tee -a $ERROR_TMP || exit 1
 
-#[[ $VERSION -eq "dev" ]] && PROG_PATH=$(realpath $(dirname ${BASH_SOURCE[0]}));PIPELINE_USER_CONFIG=$(find ${PROG_PATH} -iname "mitology-pipeline_user.config") || PIPELINE_USER_CONFIG=/usr/local/share/mitology-pipeline/etc/mitology-pipeline_user.config
+[[ $VERSION -eq "dev" ]] && PROG_PATH=$(realpath $(dirname ${BASH_SOURCE[0]}));PIPELINE_USER_CONFIG=$(find ${PROG_PATH} -iname "mitology-pipeline_user.config") || PIPELINE_USER_CONFIG=/usr/local/share/mitology-pipeline/etc/mitology-pipeline_user.config
 
 PIDS_ARR=()
 WAITALL_TIMEOUT=259200
@@ -108,7 +108,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # mitology-pipeline lib
-[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../lib/mitology-pipeline_lib.inc || LIB_PATH=/usr/local/share/mitology-pipeline/lib/mitology-pipeline_lib.inc
+[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../share/mitology-pipeline/lib/mitology-pipeline_lib.inc || LIB_PATH=/usr/local/share/mitology-pipeline/lib/mitology-pipeline_lib.inc
 
 logger_debug "[Library] Loading $LIB_PATH"
 . $LIB_PATH
@@ -117,7 +117,46 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+### USAGE ###
+Usage()
+{
+printf %s "\
+Program: ${PROG_NAME}
+Version: $VERSION
 
+Copyright 2014 Joseph Tran <Joseph.Tran@versailles.inra.fr>
+
+Licensed under the CeCILL License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+
+Usage: ${PROG_NAME} -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-N|--namespace NAMESPACE] [-P|--paired_end PAIRED_END] [-S|--singletons SINGLETONS] [--scaffold no|yes] [--skip_config] [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR] [-h|--help]
+
+Mandatory:
+-c|--config_file CONFIG_FILE            The user configuration file, CONFIG_FILE, listing the pipeline parameters by section.
+                                        You can get a copy there: $PIPELINE_USER_CONFIG.
+                                        Only the sections (and following parameters) listed here are mandatory:
+                                        - contig_assembler
+                                        - scaffolder
+                                        - velveth
+                                        - velvetg
+                                        - meta_velvetg 
+-o|--out_dir OUTPUT_DIR                 The output directory.
+
+Options:
+-N|--namespace NAMESPACE                The namespace to use for the pipeline section/parameters.
+-P|--paired_end PAIRED_END              The interleaved paired end sequences.
+-S|--singletons SINGLETONS              The singletons sequences file.
+--scaffold no|yes                       Disable or enable the scaffolding process.
+--skip_config                           Will skip loading the mandatory config file.
+                                        Useful when the config was pre-loaded by a caller script.
+-d|--debug                              Enable debugging mode in the console.
+-e|--email_address VALID_EMAIL_ADDR     An optional but valid email address to send pipeline job/error status notifications
+-h|--help                               Displays this message.
+
+"
+}
 
 
 
