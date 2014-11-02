@@ -1081,8 +1081,8 @@ case "${!ASSEMBLER}" in
 
 		# build cli
 		filterabund_se="${assembly_input}[se]"
-		isScaffolding=no
-		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --isScaffolding $isScaffolding 2>$ERROR_TMP | logger_debug &"
+		scaffold=no
+		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold 2>$ERROR_TMP | logger_debug &"
 
 		# check if contiging outdir exists 
 		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
@@ -1111,6 +1111,15 @@ case "${!ASSEMBLER}" in
 					logger_info "[$contigs_by] Will run contiging step ..."
 					logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 					run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+					### TODO ###
+					# check for return status
+					## if the code is X (to define), then warn the user to evaluate manually the expected coverage peaks or set it to auto and finally exit
+				   	## check for contigs
+					# exists then set the assembly_output hash with the its path
+					# no exist: warn and exit
+					## check for Graph2
+					# exists then set the assmbler_output hash with its path
+					# no exist: warn that scaffolding can't be run without that file but no need to exit because if not present the scaffolder will run velveth/velvetg (again) to have one
 					;;
 			esac
 		else
@@ -1118,6 +1127,8 @@ case "${!ASSEMBLER}" in
 			logger_info "[$contigs_by] Will run contiging step ..."
 			logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 			run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+			### TODO ###
+			# see previous checkings
 		fi
 		;;
 	# put here other assemblers
