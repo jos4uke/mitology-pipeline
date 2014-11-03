@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 
 #
 # run_meta-velvetg.sh
@@ -47,7 +47,9 @@ declare -r VERSION="dev"
 
 ### SESSION VARIABLES ###
 
-NAMESPACE="MITOLOGY"
+# DEFAULTS
+NAMESPACE_DEFAULT="MITOLOGY"
+SCAFFOLD_DEFAULT="no"
 
 WORKING_DIR=$(pwd)
 DATE=$(date '+%F_%Hh%Mm%Ss')
@@ -158,7 +160,96 @@ Options:
 "
 }
 
+# Configure opts
+### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
+# separately;
+CONFIGURE_OPTS=`getopt -o hc:N:P:S:o:e:d --long help,config_file:,namespace:,paired_end:,singletons:,out_dir:,debug,skip_config:,email_address: \
+    -n 'run_meta-velvetg.sh' -- "$@"`
 
+if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
+
+# Note the quotes around `$CONFIGURE_OPTS'
+eval set -- "$CONFIGURE_OPTS"
+
+while true; do
+    case "$1" in
+        -h | --help ) Usage >&2; exit 1;;
+        -c | --config_file ) CONFIGFILE="$2"; shift 2 ;;
+        -o | --out_dir ) OUTPUT_DIR="$2"; shift 2 ;;
+        -N | --namespace ) NAMESPACE="$2"; shift 2 ;;
+        -P | --paired_end ) PAIRED_END="$2"; shift 2 ;;
+        -S | --singletons ) SINGLETONS="$2"; shift 2;;
+		--scaffold) $SCAFFOLD="$2"; shift 2;;
+		--skip-config) $SKIP_CONFIG=true; shift;; 
+        -d | --debug )
+                    appender_setLevel console DEBUG;
+                    appender_activateOptions console;
+                    shift 1 ;;
+        -e | --email_address ) EMAIL="$2"; shift 2 ;;
+        -- ) shift; break ;;
+        * ) break ;;
+    esac
+done
+
+### VALIDATION ###
+
+# mandatory
+if [[ ! -s $CONFIGFILE ]]; then
+    if [[ $SKIP_CONFIG ]]; then
+		logger_info "Set skipping loading config file, $([[ -n $CONFIGFILE ]] && echo $CONFIGFILE)."
+	else
+		logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
+    	exit 1;
+	fi
+else
+	if [[ $SKIP_CONFIG ]]; then
+		logger_info "Set skipping loading config file, $CONFIGFILE."
+	fi
+fi
+
+if [[ -z $OUTPUT_DIR ]]; then
+    logger_fatal "Output directory must be not null. See Usage with --help option.";
+    exit 1;
+fi
+
+if [[ ! -s $PAIRED_END ]]; then
+	logger_fatal "Interleaved paired end file, $PAIRED_END, does not exist or is empty. See Usage with --help option."
+	exit 1;
+fi
+
+# not mandatory
+if [[ -z $NAMESPACE ]]; then
+	NAMESPACE=$NAMESPACE_DEFAULT
+	logger_info "Use default namespace: $NAMESPACE"
+fi
+
+if [[ ! -s $SINGLETONS ]]; then
+	logger_warn "Singletons file, SINGLETONS, does not exist or is empty. See Usage with --help option."
+fi
+
+if [[ "$SCAFFOLD" -eq "no" || "$SCAFFOLD" -eq "yes" ]]; then
+	logger_info "The user scaffold value is now, ${SCAFFOLD}."
+else
+	logger_warn "The user scaffold value, $SCAFFOLD, is not recognized. The authorized values are no or yes."
+	SCAFFOLD=$SCAFFOLD_DEFAULT
+	logger_warn "Will use the default scaffold value, ${SCAFFOLD}."
+fi
+
+
+
+
+
+if [[ -z $ASSEMBLER_CLI ]]; then
+    logger_warn "Assembler string must be not null. See Usage with --help option."
+else
+    # check if assembler is supported else use default
+    if [[ ! $(elementIn "$ASSEMBLER_CLI" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then
+        logger_warn "Given assembler, $ASSEMBLER_CLI, is not currently supported. See Usage with --help option."
+        exit 1
+    else
+        logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER_CLI ."
+    fi
+fi
 
 
 
