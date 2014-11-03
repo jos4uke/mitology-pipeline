@@ -151,7 +151,7 @@ http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-A|--assembler ASSEMBLER] [-S|--scaffolder SCAFFOLDER] [-d|--debug] [-C|--kmer_abund_cutoff INT] [-e|--email_address VALID_EMAIL_ADDR]
 
 Mandatory:
--c|--config_file CONFIG_FILE            The user configuration file listing the data samples paths and tetrad analysis parameters.
+-c|--config_file CONFIG_FILE            The user configuration file, CONFIG_FILE, listing the pipeline parameters by section.
                                         You can get a copy there: $PIPELINE_USER_CONFIG.
 -o|--out_dir OUTPUT_DIR                 The output directory.
 
