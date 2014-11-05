@@ -50,6 +50,7 @@ declare -r VERSION="dev"
 # DEFAULTS
 NAMESPACE_DEFAULT="MITOLOGY"
 SCAFFOLD_DEFAULT="no"
+CONFIG_SECTIONS=("contig_assembler" "scaffolder" "velveth" "velvetg" "meta_velvetg")
 
 WORKING_DIR=$(pwd)
 DATE=$(date '+%F_%Hh%Mm%Ss')
