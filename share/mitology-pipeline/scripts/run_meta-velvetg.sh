@@ -55,15 +55,15 @@ CONFIG_SECTIONS=("contig_assembler" "scaffolder" "velveth" "velvetg" "meta_velve
 WORKING_DIR=$(pwd)
 DATE=$(date '+%F_%Hh%Mm%Ss')
 SESSION_ID=$(date '+%Y%m%d%H%M%S')
-EXECUTED_COMMAND="${BASH_SOURCE[0]} $*"
+EXECUTED_COMMAND="${BASH_SOURCE[0]} $@"
 PROG_NAME="$(basename ${BASH_SOURCE[0]})"
-SESSION_TAG=${NAMESPACE}_${USER}_${SESSION_ID}
+SESSION_TAG=${NAMESPACE_DEFAULT}_${USER}_${SESSION_ID}
 
 LOG_DIR="log"
 DEBUGFILE=${SESSION_TAG}.log
 ERROR_TMP_MODEL="/tmp/${PROG_NAME%.*}_error_${SESSION_TAG}.XXXXXX"
 ERROR_TMP=$(mktemp "$ERROR_TMP_MODEL")
-[[ $? -eq 0 ]] && echo "Execute ${PROG_NAME%.*}"| tee -a $ERROR_TMP || exit 1
+[[ $? -eq 0 ]] && echo -e "Execute ${PROG_NAME%.*} pipeline. Version: $VERSION"| tee -a $ERROR_TMP || exit 1
 
 [[ $VERSION -eq "dev" ]] && PROG_PATH=$(realpath $(dirname ${BASH_SOURCE[0]}));PIPELINE_USER_CONFIG=$(find ${PROG_PATH} -iname "mitology-pipeline_user.config") || PIPELINE_USER_CONFIG=/usr/local/share/mitology-pipeline/etc/mitology-pipeline_user.config
 
