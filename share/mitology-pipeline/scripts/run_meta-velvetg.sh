@@ -241,16 +241,36 @@ if [[ $? -ne 0 ]]; then
 fi
 
 
-if [[ -z $ASSEMBLER_CLI ]]; then
-    logger_warn "Assembler string must be not null. See Usage with --help option."
+#################
+# PIPELINE STEPS
+#################
+
+# CREATE OUTPUT DIR
+# LOAD CONFIG
+# ASSEMBLY:
+# - CONTIGING
+# - SCAFFOLDING
+
+#===================
+# OUTPUT DIRECTORY
+#===================
+
+echo "$PROG_NAME pipeline (version: $VERSION)." | tee $ERROR_TMP 2>&1 | logger_info
+echo "Executed command: ${EXECUTED_COMMAND}" | tee -a $ERROR_TMP 2>&1 | logger_info
+
+#
+# Create a directory named with OUTPUT_DIR value, to save all outputs
+#
+echo "Creating $OUTPUT_DIR directory ..." | tee -a $ERROR_TMP 2>&1 | logger_info
+if [[ -d $OUTPUT_DIR ]]; then
+    echo "OK $OUTPUT_DIR directory already exists. Will output all assembly output files in this directory." | tee -a $ERROR_TMP 2>&1  | logger_info
 else
-    # check if assembler is supported else use default
-    if [[ ! $(elementIn "$ASSEMBLER_CLI" "${SUPPORTED_ASSEMBLERS[@]}") ]]; then
-        logger_warn "Given assembler, $ASSEMBLER_CLI, is not currently supported. See Usage with --help option."
-        exit 1
-    else
-        logger_info "Replace the default assembler, $ASSEMBLER_DEFAULT, by the user provided assembler, $ASSEMBLER_CLI ."
-    fi
+    mkdir -p $OUTPUT_DIR 2>>$ERROR_TMP
+    rtrn=$?
+    out_dir_failed_msg="[Output directory] Failed. Output directory, $OUTPUT_DIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    echo "$(date '+%Y-%m-%d %T') [Output directory] OK $OUTPUT_DIR directory was created successfully. Will output all output files in this directory." | tee -a $ERROR_TMP 2>&1 | logger_info
 fi
 
 
