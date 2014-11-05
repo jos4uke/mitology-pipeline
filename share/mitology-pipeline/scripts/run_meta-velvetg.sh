@@ -134,22 +134,18 @@ you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 
-Usage: ${PROG_NAME} -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-N|--namespace NAMESPACE] [-P|--paired_end PAIRED_END] [-S|--singletons SINGLETONS] [--scaffold no|yes] [--skip_config] [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR] [-h|--help]
+Usage: ${PROG_NAME} -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR -P|--paired_end PAIRED_END [-S|--singletons SINGLETONS] [--scaffold no|yes] [-N|--namespace NAMESPACE] [--skip_config] [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR] [-h|--help]
 
 Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file, CONFIG_FILE, listing the pipeline parameters by section.
                                         You can get a copy there: $PIPELINE_USER_CONFIG.
                                         Only the sections (and following parameters) listed here are mandatory:
-                                        - contig_assembler
-                                        - scaffolder
-                                        - velveth
-                                        - velvetg
-                                        - meta_velvetg 
+                                        $(echo "${CONFIG_SECTIONS[@]}" | sed -e 's/ /, /g')
 -o|--out_dir OUTPUT_DIR                 The output directory.
+-P|--paired_end PAIRED_END              The interleaved paired end sequences.
 
 Options:
 -N|--namespace NAMESPACE                The namespace to use for the pipeline section/parameters.
--P|--paired_end PAIRED_END              The interleaved paired end sequences.
 -S|--singletons SINGLETONS              The singletons sequences file.
 --scaffold no|yes                       Disable or enable the scaffolding process.
 --skip_config                           Will skip loading the mandatory config file.
