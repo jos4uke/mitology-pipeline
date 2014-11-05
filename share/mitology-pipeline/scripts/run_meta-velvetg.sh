@@ -59,7 +59,6 @@ EXECUTED_COMMAND="${BASH_SOURCE[0]} $@"
 PROG_NAME="$(basename ${BASH_SOURCE[0]})"
 SESSION_TAG=${NAMESPACE_DEFAULT}_${USER}_${SESSION_ID}
 
-LOG_DIR="log"
 DEBUGFILE=${SESSION_TAG}.log
 ERROR_TMP_MODEL="/tmp/${PROG_NAME%.*}_error_${SESSION_TAG}.XXXXXX"
 ERROR_TMP=$(mktemp "$ERROR_TMP_MODEL")
@@ -82,43 +81,25 @@ log4sh_resetConfiguration
 
 # set the global logging level
 # add and configure a FileAppender that outputs to STDERR
-logger_addAppender stderr
-appender_setType stderr FileAppender
-appender_file_setFile stderr STDERR
-appender_setLevel stderr FATAL
-appender_setLayout stderr PatternLayout
-appender_setPattern stderr '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
-appender_activateOptions stderr
+logger_addAppender ${PROG_NAME}.stderr2
+appender_setType ${PROG_NAME}.stderr2 FileAppender
+appender_file_setFile ${PROG_NAME}.stderr2 STDERR
+appender_setLevel ${PROG_NAME}.stderr2 FATAL
+appender_setLayout ${PROG_NAME}.stderr2 PatternLayout
+appender_setPattern ${PROG_NAME}.stderr2 "%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] ${PROG_NAME} - %m"
+appender_activateOptions ${PROG_NAME}.stderr2
 # add and configure console appender that outputs to standard output
-logger_addAppender console
-appender_setType console ConsoleAppender
-appender_setLevel console INFO
-appender_setLayout console PatternLayout
-appender_setPattern console '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
-appender_activateOptions console
-appender_exists console && logger_debug "Console appender is enabled." || logger_warn "Console appender was not enabled. Maybe a log4sh error occured."
+logger_addAppender ${PROG_NAME}.console2
+appender_setType ${PROG_NAME}.console2 ConsoleAppender
+appender_setLevel ${PROG_NAME}.console2 INFO
+appender_setLayout ${PROG_NAME}.console2 PatternLayout
+appender_setPattern ${PROG_NAME}.console2 "%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] ${PROG_NAME} - %m"
+appender_activateOptions ${PROG_NAME}.console2
+appender_exists ${PROG_NAME}.console2 && logger_debug "Console appender is enabled." || logger_warn "Console appender was not enabled. Maybe a log4sh error occured."
 
-### LOAD LIB ###
-
-# bash-common lib
-[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname ${BASH_SOURCE[0]}))/../../../../bash-common/share/bash-common/lib/bash-common_lib.inc || LIB_PATH=/usr/local/share/bash-common/lib/bash-common_lib.inc
-
-logger_debug "[Library] Loading $LIB_PATH"
-. $LIB_PATH
-if [[ $? -ne 0 ]]; then
-    logger_fatal "Error loading bash common lib: $LIB_PATH"
-    exit 1
-fi
-
-# mitology-pipeline lib
-[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../share/mitology-pipeline/lib/mitology-pipeline_lib.inc || LIB_PATH=/usr/local/share/mitology-pipeline/lib/mitology-pipeline_lib.inc
-
-logger_debug "[Library] Loading $LIB_PATH"
-. $LIB_PATH
-if [[ $? -ne 0 ]]; then
-    logger_fatal "Error loading mitology pipeline lib: $LIB_PATH"
-    exit 1
-fi
+### PRINT PROG VERSION AND COMMAND
+echo "$PROG_NAME pipeline (version: $VERSION)." | tee $ERROR_TMP 2>&1 | logger_info
+echo "Executed command: ${EXECUTED_COMMAND}" | tee -a $ERROR_TMP 2>&1 | logger_info
 
 ### USAGE ###
 Usage()
@@ -264,9 +245,9 @@ logger_info "[End] Run successfully the $PROG_NAME pipeline."
 logger_info "[End] Will exit now."
 
 # close all appenders
-appender_exists stderr && appender_close stderr
-appender_exists console && appender_close console
-appender_exists debuggerF && appender_close debuggerF
+appender_exists ${PROG_NAME}.stderr2 && appender_close ${PROG_NAME}.stderr
+appender_exists ${PROG_NAME}.console2 && appender_close ${PROG_NAME}.console2
+appender_exists ${PROG_NAME}.debuggerF2 && appender_close ${PROG_NAME}.debuggerF2
 
 exit 0
 
