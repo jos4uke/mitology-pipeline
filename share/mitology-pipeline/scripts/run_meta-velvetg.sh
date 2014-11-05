@@ -141,13 +141,12 @@ Options:
 # Configure opts
 ### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately;
-CONFIGURE_OPTS=`getopt -o hc:N:P:S:o:e:d --long help,config_file:,namespace:,paired_end:,singletons:,out_dir:,debug,skip_config:,email_address: \
-    -n 'run_meta-velvetg.sh' -- "$@"`
+CFG_OPTS=$(getopt -o hc:N:P:S:o:e:d --long help,config_file:,namespace:,paired_end:,singletons:,out_dir:,email_address:,debug,scaffold:,skip_config -n 'run_meta-velvetg.sh' -- "$@")
 
 if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
 
 # Note the quotes around `$CONFIGURE_OPTS'
-eval set -- "$CONFIGURE_OPTS"
+eval set -- "$CFG_OPTS"
 
 while true; do
     case "$1" in
@@ -157,13 +156,14 @@ while true; do
         -N | --namespace ) NAMESPACE="$2"; shift 2 ;;
         -P | --paired_end ) PAIRED_END="$2"; shift 2 ;;
         -S | --singletons ) SINGLETONS="$2"; shift 2;;
-		--scaffold) $SCAFFOLD="$2"; shift 2;;
-		--skip-config) $SKIP_CONFIG=true; shift;; 
         -d | --debug )
-                    appender_setLevel console DEBUG;
-                    appender_activateOptions console;
-                    shift 1 ;;
-        -e | --email_address ) EMAIL="$2"; shift 2 ;;
+					DEBUG="debug";
+					appender_setLevel ${PROG_NAME}.console2 DEBUG 
+					appender_activateOptions ${PROG_NAME}.console2
+					shift ;;
+        --scaffold ) SCAFFOLD="$2"; shift 2;;
+        --skip_config ) SKIP_CONFIG=true; shift;;
+		-e | --email_address ) EMAIL="$2"; shift 2 ;;
         -- ) shift; break ;;
         * ) break ;;
     esac
@@ -173,16 +173,21 @@ done
 
 # mandatory
 if [[ ! -s $CONFIGFILE ]]; then
-    if [[ $SKIP_CONFIG ]]; then
-		logger_info "Set skipping loading config file, $([[ -n $CONFIGFILE ]] && echo $CONFIGFILE)."
-	else
-		logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
-    	exit 1;
-	fi
+    case $SKIP_CONFIG in
+		(true)
+			logger_info "Set skipping loading config file, $([[ -n $CONFIGFILE ]] && echo $CONFIGFILE)."
+			;;
+		(false)	
+			logger_fatal "Config file, $CONFIGFILE, does not exist or is empty. See Usage with --help option.";
+    		exit 1;
+			;;
+	esac
 else
-	if [[ $SKIP_CONFIG ]]; then
-		logger_info "Set skipping loading config file, $CONFIGFILE."
-	fi
+	case $SKIP_CONFIG in
+		(true)
+			logger_info "Set skipping loading config file, $CONFIGFILE."
+			;;
+	esac
 fi
 
 if [[ -z $OUTPUT_DIR ]]; then
@@ -202,7 +207,7 @@ if [[ -z $NAMESPACE ]]; then
 fi
 
 if [[ ! -s $SINGLETONS ]]; then
-	logger_warn "Singletons file, SINGLETONS, does not exist or is empty. See Usage with --help option."
+	logger_warn "Singletons file, $SINGLETONS, does not exist or is empty. See Usage with --help option."
 fi
 
 if [[ "$SCAFFOLD" -eq "no" || "$SCAFFOLD" -eq "yes" ]]; then
