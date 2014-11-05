@@ -273,6 +273,22 @@ else
     echo "$(date '+%Y-%m-%d %T') [Output directory] OK $OUTPUT_DIR directory was created successfully. Will output all output files in this directory." | tee -a $ERROR_TMP 2>&1 | logger_info
 fi
 
+#==================================
+# Enable the pipeline debug logger
+#==================================
+
+DEBUGFILE="${PROG_NAME}_$(date '+%F_%Hh%Mm%Ss').log"
+DEBUGFILE_PATH=$(realpath $OUTPUT_DIR)/$DEBUGFILE
+logger_addAppender ${PROG_NAME}.debuggerF2
+appender_setType ${PROG_NAME}.debuggerF2 FileAppender
+appender_file_setFile ${PROG_NAME}.debuggerF2 $DEBUGFILE_PATH
+appender_setLevel ${PROG_NAME}.debuggerF2 DEBUG
+appender_setLayout ${PROG_NAME}.debuggerF2 PatternLayout
+appender_setPattern ${PROG_NAME}.debuggerF2 '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions ${PROG_NAME}.debuggerF2
+appender_exists ${PROG_NAME}.debuggerF2 && cat $ERROR_TMP | logger_info
+appender_exists ${PROG_NAME}.debuggerF2 && logger_info "Debugging infos will be output to $DEBUGFILE_PATH file." || logger_warn "The debugger file appender was not enabled. Maybe a log4sh error occured."
+
 
 
 
