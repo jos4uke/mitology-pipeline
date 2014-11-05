@@ -347,7 +347,8 @@ for cfg in $(get_config_sections $BACKUPED_CONFIG_FILE 2>$ERROR_TMP;); do
     [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
     exit_on_error "$ERROR_TMP" "$load_user_config_failed_msg" $rtrn "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" $SESSION_TAG $EMAIL
     for params in $(set | grep ^$(toupper ${NAMESPACE}_${cfg}_) 2>$ERROR_TMP); do
-        logger_debug "$params"
+        logger_debug "export $params"
+		export "$params"
     done
     rtrn=$?
     [[ "$rtrn" -ne 0 ]] && logger_fatal "$load_user_config_failed_msg"
@@ -1082,7 +1083,7 @@ case "${!ASSEMBLER}" in
 		# build cli
 		filterabund_se="${assembly_input}[se]"
 		scaffold=no
-		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config 2>$ERROR_TMP | logger_debug &"
+		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d 2>$ERROR_TMP | logger_debug &"
 
 		# check if contiging outdir exists 
 		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
@@ -1109,7 +1110,7 @@ case "${!ASSEMBLER}" in
 					;;
 				(false)
 					logger_info "[$contigs_by] Will run contiging step ..."
-					logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
+					#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 					run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
 					### TODO ###
 					# check for return status
@@ -1125,7 +1126,7 @@ case "${!ASSEMBLER}" in
 		else
 			# run contiging
 			logger_info "[$contigs_by] Will run contiging step ..."
-			logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
+			#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 			run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
 			### TODO ###
 			# see previous checkings
