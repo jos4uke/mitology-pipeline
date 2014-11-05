@@ -218,8 +218,27 @@ else
 	logger_warn "Will use the default scaffold value, ${SCAFFOLD}."
 fi
 
+### LOAD LIB ###
 
+# bash-common lib
+[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname ${BASH_SOURCE[0]}))/../../../../bash-common/share/bash-common/lib/bash-common_lib.inc || LIB_PATH=/usr/local/share/bash-common/lib/bash-common_lib.inc
 
+logger_debug "[Library] Loading $LIB_PATH"
+. $LIB_PATH
+if [[ $? -ne 0 ]]; then
+    logger_fatal "Error loading bash common lib: $LIB_PATH"
+    exit 1
+fi
+
+# mitology-pipeline lib
+[[ $VERSION == "dev" ]] && LIB_PATH=$(realpath $(dirname $0))/../lib/mitology-pipeline_lib.inc || LIB_PATH=/usr/local/share/mitology-pipeline/lib/mitology-pipeline_lib.inc
+
+logger_debug "[Library] Loading $LIB_PATH"
+. $LIB_PATH
+if [[ $? -ne 0 ]]; then
+    logger_fatal "Error loading mitology pipeline lib: $LIB_PATH"
+    exit 1
+fi
 
 
 if [[ -z $ASSEMBLER_CLI ]]; then
