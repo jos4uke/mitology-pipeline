@@ -115,7 +115,11 @@ you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
 
-Usage: ${PROG_NAME} -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR -P|--paired_end PAIRED_END [-S|--singletons SINGLETONS] [--scaffold no|yes] [-N|--namespace NAMESPACE] [--skip_config] [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR] [-h|--help]
+Usage: ${PROG_NAME} -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR -P|--paired_end PAIRED_END 
+                   [-S|--singletons SINGLETONS] [--scaffold no|yes] [-N|--namespace NAMESPACE] 
+                   [--pre_assembly_dir PA_DIRECTORY] [--skip_config] 
+                   [-d|--debug] [-e|--email_address VALID_EMAIL_ADDR] 
+                   [-h|--help]
 
 Mandatory:
 -c|--config_file CONFIG_FILE            The user configuration file, CONFIG_FILE, listing the pipeline parameters by section.
@@ -129,6 +133,9 @@ Options:
 -N|--namespace NAMESPACE                The namespace to use for the pipeline section/parameters.
 -S|--singletons SINGLETONS              The singletons sequences file.
 --scaffold no|yes                       Disable or enable the scaffolding process.
+--pre_assembly_dir PA_DIRECTORY         The pre-assembly directory, PA_DIRECTORY, containing the velveth/velvetg output files 
+                                        mandatory to meta-velvetg. Useful to avoid redundancy when run a 2 rounds assembly
+                                        first without scaffolding then with scaffolding. 
 --skip_config                           Will skip loading the mandatory config file.
                                         Useful when the config was pre-loaded by a caller script.
 -d|--debug                              Enable debugging mode in the console.
