@@ -1045,7 +1045,9 @@ logger_info "[$ASSEMBLY_OUTDIR] De novo assembly on filtered reads ... "
 
 # set assembly vars
 filterabund_pe="${assembly_input}[pe]"
-sample_id="$(basename ${!filterabund_pe%.pe})"
+#sample_id="$(basename ${!filterabund_pe%.pe})"
+filterabund_se="${assembly_input}[se]"
+[[ -s ${!filterabund_se} ]] && sample_id="$(basename ${!filterabund_pe}).se" || sample_id="$(basename ${!filterabund_pe})"
 sample_assemblies_outdir="${sample_id}.assemblies"
 # define assembly
 declare -r assembly_output=$(toupper ${NAMESPACE}_assembly_output) 
