@@ -415,16 +415,16 @@ esac
 
 eval "declare -A $(toupper ${NAMESPACE}_pre_assembly_output)"
 pre_assembly_output=$(toupper ${NAMESPACE}_pre_assembly_output)
-eval "{pre_assembly_output}=( [velveth_Roadmaps]=${OUTPUT_DIR}/Roadmaps )"
-eval "{pre_assembly_output}+=( [velveth_Sequences]=${OUTPUT_DIR}/Sequences )"
-eval "{pre_assembly_output}+=( [velvetg_Graph2]=${OUTPUT_DIR}/Graph2 )"
-eval "{pre_assembly_output}+=( [velvetg_stats]=${OUTPUT_DIR}/stats.txt )"
-eval "{pre_assembly_output}+=( [rplot]=${OUTPUT_DIR}/rplot.pdf )" 
+eval "${pre_assembly_output}=( [velveth_Roadmaps]=${OUTPUT_DIR}/Roadmaps )"
+eval "${pre_assembly_output}+=( [velveth_Sequences]=${OUTPUT_DIR}/Sequences )"
+eval "${pre_assembly_output}+=( [velvetg_Graph2]=${OUTPUT_DIR}/Graph2 )"
+eval "${pre_assembly_output}+=( [velvetg_stats]=${OUTPUT_DIR}/stats.txt )"
+eval "${pre_assembly_output}+=( [rplot]=${OUTPUT_DIR}/rplot.pdf )" 
 
 eval "declare -A $(toupper ${NAMESPACE}_assembly_output)"
 assembly_output=$(toupper ${NAMESPACE}_assembly_output)
-eval "{assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/meta-velvetg.contigs.fa )"
-eval "{assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/meta-velvetg.asm.afg )"
+eval "${assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/meta-velvetg.contigs.fa )"
+eval "${assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/meta-velvetg.asm.afg )"
 
 
 
@@ -453,7 +453,7 @@ logger_info "[End] Run successfully the $PROG_NAME pipeline."
 logger_info "[End] Will exit now."
 
 # close all appenders
-appender_exists ${PROG_NAME}.stderr2 && appender_close ${PROG_NAME}.stderr
+appender_exists ${PROG_NAME}.stderr2 && appender_close ${PROG_NAME}.stderr2
 appender_exists ${PROG_NAME}.console2 && appender_close ${PROG_NAME}.console2
 appender_exists ${PROG_NAME}.debuggerF2 && appender_close ${PROG_NAME}.debuggerF2
 
