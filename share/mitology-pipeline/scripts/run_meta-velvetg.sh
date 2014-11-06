@@ -148,7 +148,7 @@ Options:
 # Configure opts
 ### NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have to install this
 # separately;
-CFG_OPTS=$(getopt -o hc:N:P:S:o:e:d --long help,config_file:,namespace:,paired_end:,singletons:,out_dir:,email_address:,debug,scaffold:,skip_config -n 'run_meta-velvetg.sh' -- "$@")
+CFG_OPTS=$(getopt -o hc:N:P:S:o:e:d --long help,config_file:,namespace:,paired_end:,singletons:,out_dir:,email_address:,debug,scaffold:,skip_config,pre_assembly_dir: -n 'run_meta-velvetg.sh' -- "$@")
 
 if [[ $? != 0 ]] ; then Usage >&2 ; exit 1 ; fi
 
@@ -169,7 +169,8 @@ while true; do
 					appender_activateOptions ${PROG_NAME}.console2
 					shift ;;
         --scaffold ) SCAFFOLD="$2"; shift 2;;
-        --skip_config ) SKIP_CONFIG=true; shift;;
+        --pre_assembly_dir ) PA_DIR="$2"; shift 2;;
+		--skip_config ) SKIP_CONFIG=true; shift;;
 		-e | --email_address ) EMAIL="$2"; shift 2 ;;
         -- ) shift; break ;;
         * ) break ;;
@@ -225,6 +226,19 @@ else
 	logger_warn "Will use the default scaffold value, ${SCAFFOLD}."
 fi
 
+if [[ ! -s "$PA_DIR" ]]; then
+	if [[ -z "$PA_DIR" ]]; then
+		logger_info "Set the pre-assembly directory to the output directory: $OUTPUT_DIR"	
+	else
+		logger_warn "The user pre-assembly directory, ${PA_DIR}, does not exist."
+		logger_info "Set the pre-assembly directory to the output directory: $OUTPUT_DIR"
+	fi
+	PA_DIR=$OUTPUT_DIR
+else
+	logger_debug "Set the pre-assembly directory to ${PA_DIR}"
+	logger_debug "Velveth/velvetg output files are supposed to be in this directory."
+fi
+ 
 ### LOAD LIB ###
 
 # bash-common lib
@@ -411,6 +425,7 @@ eval "declare -A $(toupper ${NAMESPACE}_assembly_output)"
 assembly_output=$(toupper ${NAMESPACE}_assembly_output)
 eval "{assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/meta-velvetg.contigs.fa )"
 eval "{assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/meta-velvetg.asm.afg )"
+
 
 
 
