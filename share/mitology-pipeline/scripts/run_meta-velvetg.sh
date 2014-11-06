@@ -379,7 +379,6 @@ case $SKIP_CONFIG in
 esac		
 
 
-
 #=======================
 # CONTIGING/SCAFFOLDING
 #=======================
@@ -413,20 +412,39 @@ esac
 # meta-velvetg.contigs.fa
 # meta-velvetg.asm.afg
 
+# expected output hashes
+declare -A velveth_output
+velveth_output=( [Roadmaps]="Roadmaps" )
+velveth_output+=( [Sequences]="Sequences" )
+declare -A velvetg_output
+velvetg_output=( [Graph2]="Graph2" )
+velvetg_output+=( [stats]="stats.txt" )
+velvetg_output+=( [weighted_hist]="weighted_hist.rplot.pdf" )
+declare -A metavelvetg_output 
+metavelvetg_output=( [contigs]="meta-velvetg.contigs.fa" )
+metavelvetg_output+=( [afg]="meta-velvetg.asm.afg" )
+
 eval "declare -A $(toupper ${NAMESPACE}_pre_assembly_output)"
 pre_assembly_output=$(toupper ${NAMESPACE}_pre_assembly_output)
-eval "${pre_assembly_output}=( [velveth_Roadmaps]=${OUTPUT_DIR}/Roadmaps )"
-eval "${pre_assembly_output}+=( [velveth_Sequences]=${OUTPUT_DIR}/Sequences )"
-eval "${pre_assembly_output}+=( [velvetg_Graph2]=${OUTPUT_DIR}/Graph2 )"
-eval "${pre_assembly_output}+=( [velvetg_stats]=${OUTPUT_DIR}/stats.txt )"
-eval "${pre_assembly_output}+=( [rplot]=${OUTPUT_DIR}/rplot.pdf )" 
+eval "${pre_assembly_output}=( [velveth_Roadmaps]=${PA_DIR}/${velveth_output[Roadmaps]} )"
+eval "${pre_assembly_output}+=( [velveth_Sequences]=${PA_DIR}/${velveth_output[Sequences]} )"
+eval "${pre_assembly_output}+=( [velvetg_Graph2]=${PA_DIR}/${velvetg_output[Graph2]} )"
+eval "${pre_assembly_output}+=( [velvetg_stats]=${PA_DIR}/${velvetg_output[stats]} )"
+eval "${pre_assembly_output}+=( [rplot]=${PA_DIR}/${velvetg_output[weighted_hist]} )" 
 
 eval "declare -A $(toupper ${NAMESPACE}_assembly_output)"
 assembly_output=$(toupper ${NAMESPACE}_assembly_output)
-eval "${assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/meta-velvetg.contigs.fa )"
-eval "${assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/meta-velvetg.asm.afg )"
+eval "${assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/${metavelvetg_output[contigs]} )"
+eval "${assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/${metavelvetg_output[afg]} )"
 
-
+### test
+VH_seq="${pre_assembly_output}[velveth_Roadmaps]"
+echo "VH seq: ${!VH_seq}"
+VG_wh="${pre_assembly_output}[rplot]"
+echo "VG wh: ${!VG_wh}"
+MV_afg="${assembly_output}[metavelvetg_afg]"
+echo "MV afg: ${!MV_afg}"
+### end test
 
 
 
