@@ -359,16 +359,51 @@ esac
 
 
 
+#=======================
+# CONTIGING/SCAFFOLDING
+#=======================
 
+### STEPS ###
+# PRE-ASSEMBLY
+## VELVETH
+## VELVETG
+## RPLOT
+# ASSEMBLY
+## META-VELVETG
+### SCAFFOLD NO|YES
 
+### expected output ###
+# if not passed as options to the cli, search in the current output dir
+# PRE-ASSEMBLY
+## VELVETH
+# velveth/Roadmaps
+# velveth/Sequences 
 
+## VELVETG
+# velvetg/Graph2
+# velvetg/stats.txt
 
+## RPLOT
+# *.rplot.pdf
 
+# ASSEMBLY
+## META-VELVETG
+### SCAFFOLD NO|YES
+# meta-velvetg.contigs.fa
+# meta-velvetg.asm.afg
 
+eval "declare -A $(toupper ${NAMESPACE}_pre_assembly_output)"
+pre_assembly_output=$(toupper ${NAMESPACE}_pre_assembly_output)
+eval "{pre_assembly_output}=( [velveth_Roadmaps]=${OUTPUT_DIR}/Roadmaps )"
+eval "{pre_assembly_output}+=( [velveth_Sequences]=${OUTPUT_DIR}/Sequences )"
+eval "{pre_assembly_output}+=( [velvetg_Graph2]=${OUTPUT_DIR}/Graph2 )"
+eval "{pre_assembly_output}+=( [velvetg_stats]=${OUTPUT_DIR}/stats.txt )"
+eval "{pre_assembly_output}+=( [rplot]=${OUTPUT_DIR}/rplot.pdf )" 
 
-
-
-
+eval "declare -A $(toupper ${NAMESPACE}_assembly_output)"
+assembly_output=$(toupper ${NAMESPACE}_assembly_output)
+eval "{assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/meta-velvetg.contigs.fa )"
+eval "{assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/meta-velvetg.asm.afg )"
 
 
 
