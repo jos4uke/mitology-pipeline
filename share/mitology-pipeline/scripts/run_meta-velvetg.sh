@@ -519,8 +519,35 @@ case $SKIP_PA in
 		esac	
 
 		# velvetg
-		VG="velvetg"
+		velvetg_path="$(toupper ${NAMESPACE}_paths)_velvetg"
+		VG="${!velvetg_path##*/}"
+		VG_ERROR=$OUTPUT_DIR/${VG}.err
+		case $SKIP_VELVETG in
+			(true)
+				logger_debug "[$VG] Expected velvetg output files already exist: "
+				logger_debug "[$VG] - ${!VG_Graph2}"
+				logger_debug "[$VG] - ${!VG_stats}"
+				logger_debug "[$VG] - ${!VG_rplot}"
+				logger_debug "[$VG] Skip velvetg pre-assembly step ... "
+				;;
+			(false)
+				logger_debug "[$VG] Run velvetg step ... "
 
+				# build cli options
+				velvetg_opts=($(buildCommandLineOptions "velvetg" "$NAMESPACE" "remove_equal" 2>${PA_ERROR}))
+				velvetg_opts_sorted=($(shortenAndSortOptions "${velvetg_opts[@]}" 2>${PA_ERROR}))
+				rtrn=$?
+				cli_opts_failed_msg="[$VG] An error occured while building $VG  command line options for current sample ${OUTPUT_DIR%%/*}."
+				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+				logger_debug "[$VG] $VG options: ${velvetg_opts_sorted[@]}"
+				# build cli
+				velvetg_cli="${!velvetg_path} $OUTPUT_DIR ${velvetg_opts_sorted[@]} 2>${VG_ERROR} | logger_debug &"
+				
+				# run cli
+				run_cli -c "$velvetg_cli" -t "$VG" -e "$VG_ERROR" -E "$PA_ERROR"
+				;;
+
+		esac
 
 		# rplot
 		Rplot="rplot"
