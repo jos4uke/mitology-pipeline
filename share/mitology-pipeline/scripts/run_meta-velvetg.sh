@@ -412,6 +412,9 @@ esac
 # meta-velvetg.contigs.fa
 # meta-velvetg.asm.afg
 
+# assembly vars 
+ASSEMBLY_STEP="assembly"
+
 # expected output hashes
 declare -A velveth_output
 velveth_output=( [Roadmaps]="Roadmaps" )
@@ -437,18 +440,35 @@ assembly_output=$(toupper ${NAMESPACE}_assembly_output)
 eval "${assembly_output}=( [metavelvetg_contigs]=${OUTPUT_DIR}/${metavelvetg_output[contigs]} )"
 eval "${assembly_output}+=( [metavelvetg_afg]=${OUTPUT_DIR}/${metavelvetg_output[afg]} )"
 
-### test
-VH_seq="${pre_assembly_output}[velveth_Roadmaps]"
-echo "VH seq: ${!VH_seq}"
-VG_wh="${pre_assembly_output}[rplot]"
-echo "VG wh: ${!VG_wh}"
+# check for existing pre-assembly output files
+## velveth
+VH_Roadmaps="${pre_assembly_output}[velveth_Roadmaps]"
+VH_Sequences="${pre_assembly_output}[velveth_Sequences]"
+[[ ! -s ${!VH_Roadmaps} ]] && SKIP_VELVETH=false || SKIP_VELVETH=true
+[[ ! -s ${!VH_Sequences} ]] && SKIP_VELVETH=false || SKIP_VELVETH=true
+## velvetg
+VG_Graph2="${pre_assembly_output}[velvetg_Graph2]"
+VG_stats="${pre_assembly_output}[velvetg_stats]"
+[[ ! -s ${!VG_Graph2} ]] && SKIP_VELVETG=false || SKIP_VELVETG=true
+[[ ! -s ${!VG_stats} ]] && SKIP_VELVETG=false || SKIP_VELVETG=true
+## rplot
+VG_rplot="${pre_assembly_output}[rplot]"
+[[ ! -s ${!VG_rplot} ]] && SKIP_RPLOT=false || SKIP_RPLOT=true
+## pre-assembly
+logger_debug "[$ASSEMBLY_STEP] SKIP_VELVETH: $SKIP_VELVETH"
+logger_debug "[$ASSEMBLY_STEP] SKIP_VELVETG: $SKIP_VELVETG"
+logger_debug "[$ASSEMBLY_STEP] SKIP_RPLOT: $SKIP_RPLOT"
+[[ $SKIP_VELVETH == true && $SKIP_VELVETG == true && $SKIP_RPLOT == true ]] && SKIP_PA=true || SKIP_PA=false
+logger_debug "[$ASSEMBLY_STEP] SKIP_PRE_ASSEMBLY: $SKIP_PA"
+
+# check for existing assembly output files
+## metavelvetg
+MV_contigs="${assembly_output}[metavelvetg_contigs]"
 MV_afg="${assembly_output}[metavelvetg_afg]"
-echo "MV afg: ${!MV_afg}"
-### end test
-
-
-
-
+[[ ! -s ${!MV_contigs} ]] && SKIP_MV=false || SKIP_MV=true
+amos=$(toupper ${NAMESPACE}_meta_velvetg)_amos_file
+[[ ${!amos} -eq "yes" && ! -s ${!MV_afg} ]] && SKIP_MV=false || SKIP_MV=true
+logger_debug "[$ASSEMBLY_STEP] SKIP_METAVELVETG: $SKIP_MV"
 
 
 
