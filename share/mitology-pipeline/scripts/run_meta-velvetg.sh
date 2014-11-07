@@ -498,19 +498,19 @@ case $SKIP_PA in
 				logger_info "[$VH] Run velveth step ... "
 		
 				# build cli options
-				velveth_opts=($(buildCommandLineOptions "velveth" "$NAMESPACE" 2>${PA_ERROR}))
+				velveth_opts=($(buildCommandLineOptions "velveth" "$NAMESPACE" "remove_equal" 2>${PA_ERROR}))
 				velveth_opts_sorted=($(shortenAndSortOptions "${velveth_opts[@]}" 2>${PA_ERROR}))
 				rtrn=$?
 				cli_opts_failed_msg="[$VH] An error occured while building $VH command line options for current sample ${OUTPUT_DIR%%/*}."
 				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
-				logger_debug="[$VH] $VH options: $velveth_opts_sorted"
+				logger_debug "[$VH] $VH options: ${velveth_opts_sorted[@]}"
 				# build cli
 				velveth_format_type="-fastq" 
 				velveth_read_type_pe="-shortPaired" 
 				velveth_read_type_se="-short"
 				velveth_cli="${!velveth_path} $OUTPUT_DIR ${!assembly_k} ${velveth_format_type} ${velveth_read_type_pe} ${PAIRED_END}"
 				[[ -s $SINGLETONS ]] && velveth_cli+=" ${velveth_format_type_se} ${SINGLETONS}"
-				velveth_cli+=" $velveth_opts_sorted"
+				velveth_cli+=" ${velveth_opts_sorted[@]}"
 				velveth_cli+=" 2>$VH_ERROR | logger_debug &"
 
 				# run cli
