@@ -470,8 +470,71 @@ amos=$(toupper ${NAMESPACE}_meta_velvetg)_amos_file
 [[ ${!amos} -eq "yes" && ! -s ${!MV_afg} ]] && SKIP_MV=false || SKIP_MV=true
 logger_debug "[$ASSEMBLY_STEP] SKIP_METAVELVETG: $SKIP_MV"
 
+#
+# PRE-ASSEMBLY
+#
+PA="Pre-assembly"
+PA_ERROR=$OUTPUT_DIR/${PA}.err
+assembly_k="$(toupper ${NAMESPACE}_contig_assembler)_hash_length"
+case $SKIP_PA in
+	(true)
+		logger_info "[$PA] Skip pre-assembly step ... "
+		;;
+	(false)
+		logger_info "[$PA] Running the pre-assembly step ... "
+		
+		# velveth
+		velveth_path="$(toupper ${NAMESPACE}_paths)_velveth"
+		VH="${!velveth_path##*/}"
+		VH_ERROR=$OUTPUT_DIR/${VH}.err
+		case $SKIP_VELVETH in
+			(true)
+				logger_debug "[$VH] Expected velveth output files already exist: "
+				logger_debug "[$VH] - ${!VH_Roadmaps}"
+				logger_debug "[$VH] - ${!VH_Sequences}"
+				logger_info "[$VH] Skip velveth pre-assembly step ... "
+				;;
+			(false)
+				logger_info "[$VH] Run velveth step ... "
+		
+				# build cli options
+				velveth_opts=($(buildCommandLineOptions "velveth" "$NAMESPACE" 2>${PA_ERROR}))
+				velveth_opts_sorted=($(shortenAndSortOptions "${velveth_opts[@]}" 2>${PA_ERROR}))
+				rtrn=$?
+				cli_opts_failed_msg="[$VH] An error occured while building $VH command line options for current sample ${OUTPUT_DIR%%/*}."
+				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+				logger_debug="[$VH] $VH options: $velveth_opts_sorted"
+				# build cli
+				velveth_format_type="-fastq" 
+				velveth_read_type_pe="-shortPaired" 
+				velveth_read_type_se="-short"
+				velveth_cli="${!velveth_path} $OUTPUT_DIR ${!assembly_k} ${velveth_format_type} ${velveth_read_type_pe} ${PAIRED_END}"
+				[[ -s $SINGLETONS ]] && velveth_cli+=" ${velveth_format_type_se} ${SINGLETONS}"
+				velveth_cli+=" $velveth_opts_sorted"
+				velveth_cli+=" 2>$VH_ERROR | logger_debug &"
+
+				# run cli
+				run_cli -c "$velveth_cli" -t "$VH" -e "$VH_ERROR" -E "$PA_ERROR"					
+				;;	
+		esac	
+
+		# velvetg
+		VG="velvetg"
 
 
+		# rplot
+		Rplot="rplot"
+
+		# end pre-assembly
+		logger_info "[$PA] Pre-assembly completed."
+		;;
+esac
+
+### TODO ###
+
+#
+# ASSEMBLY
+#
 
 
 
