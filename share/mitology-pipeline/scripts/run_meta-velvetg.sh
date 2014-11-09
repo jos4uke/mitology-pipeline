@@ -422,7 +422,7 @@ velveth_output+=( [Sequences]="Sequences" )
 declare -A velvetg_output
 velvetg_output=( [Graph2]="Graph2" )
 velvetg_output+=( [stats]="stats.txt" )
-velvetg_output+=( [weighted_hist]="weighted_hist.rplot.pdf" )
+velvetg_output+=( [weighted_hist]="length-weighted_kmer_cov_hist.rplot.pdf" )
 declare -A metavelvetg_output 
 metavelvetg_output=( [contigs]="meta-velvetg.contigs.fa" )
 metavelvetg_output+=( [afg]="meta-velvetg.asm.afg" )
@@ -546,11 +546,30 @@ case $SKIP_PA in
 				# run cli
 				run_cli -c "$velvetg_cli" -t "$VG" -e "$VG_ERROR" -E "$PA_ERROR"
 				;;
-
 		esac
 
 		# rplot
-		Rplot="rplot"
+		RP="rplot"
+		RP_ERROR=$OUTPUT_DIR/${RP}.err
+		case $SKIP_RPLOT in
+			(true)
+				logger_debug "[$RP] Expected rplot output file already exist: "
+				logger_debug "[$RP] - ${!VG_rplot}"
+				logger_info "[$RP] Skip rplot pre-assembly step ... "
+				;;
+			(false)
+				logger_info "[$RP] Run rplot step ... "
+
+				# build cli options
+				Rplot_script="length-weigthed_kmer_coverage_hist.rplot.R"
+				Rplot_path="$(realpath $(dirname $BASH_SOURCE[0]))/R/$Rplot_script"
+				Rplot_stats="${pre_assembly_output}[velvetg_stats]"
+				Rplot_cli="Rscript --vanilla $Rplot_path ${!Rplot_stats} 2>${RP_ERROR} &"
+				
+				# run cli
+				run_cli -c "$Rplot_cli" -t "$RP" -e "$RP_ERROR" -E "$PA_ERROR"
+				;;
+		esac
 
 		# end pre-assembly
 		logger_info "[$PA] Pre-assembly completed."
