@@ -528,7 +528,7 @@ case $SKIP_PA in
 				logger_debug "[$VG] - ${!VG_Graph2}"
 				logger_debug "[$VG] - ${!VG_stats}"
 				logger_debug "[$VG] - ${!VG_rplot}"
-				logger_debug "[$VG] Skip velvetg pre-assembly step ... "
+				logger_info "[$VG] Skip velvetg pre-assembly step ... "
 				;;
 			(false)
 				logger_debug "[$VG] Run velvetg step ... "
