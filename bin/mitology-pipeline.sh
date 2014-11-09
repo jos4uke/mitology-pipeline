@@ -589,8 +589,17 @@ KMER_FILT_ABUND_COUNTER=0
 # LINK step
 #
 # link config loading output to interleaving input 
-eval "$(toupper ${NAMESPACE}_interleaving_input)=(['R1']=${!current_sample_seq_R1_path} ['R2']=${!current_sample_seq_R2_path})"
-declare -r interleaving_input=$(toupper ${NAMESPACE}_interleaving_input)
+eval "declare -A $(toupper ${NAMESPACE}_interleaving_input)"
+interleaving_input=$(toupper ${NAMESPACE}_interleaving_input)
+eval "${interleaving_input}=( [R1]=${!current_sample_seq_R1_path} )"
+eval "${interleaving_input}+=( [R2]=${!current_sample_seq_R2_path} )"
+
+### check for interleaving input sequences
+[[ "${!interleaving_input[R1_path]}" == "${!interleaving_input[R2_path]}" ]] && (logger_debug "[TEST] Interleaving error R1 == R2"; exit 1) || (logger_fatal "[TEST] Interleaving OK R1 != R2";)
+R1_input="${interleaving_input}[R1]"
+R2_input="${interleaving_input}[R2]"
+logger_debug "Interleaving input R1: ${!R1_input}"
+logger_debug "Interleaving input R2: ${!R2_input}"
 
 #
 # Interleave reads
@@ -608,7 +617,9 @@ eval "$(toupper ${NAMESPACE}_interleaving_output)=(['filename']=${INTERLEAVING_S
 declare -r interleaving_output=$(toupper ${NAMESPACE}_interleaving_output)
 ## build cli
 declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
-interleaving_cli="${!khmer_interleave_reads} ${!interleaving_input["R1"]} ${!interleaving_input["R2"]} >${!interleaving_output["filename"]} 2>${INTERLEAVING_ERROR} &"
+R1_input="${interleaving_input}[R1]"
+R2_input="${interleaving_input}[R2]"
+interleaving_cli="${!khmer_interleave_reads} ${!R1_input} ${!R2_input} >${!interleaving_output["filename"]} 2>${INTERLEAVING_ERROR} &"
 
 # check if interleaving subdir exists else create
 # set interleaving step input vars (no need to check seq file: already done in sample checking block)
