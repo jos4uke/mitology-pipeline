@@ -527,7 +527,6 @@ case $SKIP_PA in
 				logger_debug "[$VG] Expected velvetg output files already exist: "
 				logger_debug "[$VG] - ${!VG_Graph2}"
 				logger_debug "[$VG] - ${!VG_stats}"
-				logger_debug "[$VG] - ${!VG_rplot}"
 				logger_info "[$VG] Skip velvetg pre-assembly step ... "
 				;;
 			(false)
