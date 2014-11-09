@@ -563,7 +563,7 @@ case $SKIP_PA in
 				Rplot_script="length-weigthed_kmer_coverage_hist.rplot.R"
 				Rplot_path="$(realpath $(dirname $BASH_SOURCE[0]))/R/$Rplot_script"
 				Rplot_stats="${pre_assembly_output}[velvetg_stats]"
-				Rplot_cli="Rscript --vanilla $Rplot_path ${!Rplot_stats} 2>${RP_ERROR} &"
+				Rplot_cli="Rscript --vanilla $Rplot_path $OUTPUT_DIR/$(basename ${!Rplot_stats}) 2>${RP_ERROR} &"
 				
 				# run cli
 				run_cli -c "$Rplot_cli" -t "$RP" -e "$RP_ERROR" -E "$PA_ERROR"
