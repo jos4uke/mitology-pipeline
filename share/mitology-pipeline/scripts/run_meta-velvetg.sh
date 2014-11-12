@@ -492,7 +492,6 @@ logger_debug "[$ASSEMBLY_STEP] SKIP_METAVELVETG: $SKIP_MV"
 #
 PA="Pre-assembly"
 PA_ERROR=$OUTPUT_DIR/${PA}.err
-assembly_k="$(toupper ${NAMESPACE}_contig_assembler)_hash_length"
 case $SKIP_PA in
 	(true)
 		logger_info "[$PA] Skip pre-assembly step ... "
