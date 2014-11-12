@@ -310,6 +310,15 @@ appender_activateOptions ${PROG_NAME}.debuggerF2
 appender_exists ${PROG_NAME}.debuggerF2 && cat $ERROR_TMP | logger_info
 appender_exists ${PROG_NAME}.debuggerF2 && logger_info "Debugging infos will be output to $DEBUGFILE_PATH file." || logger_warn "The debugger file appender was not enabled. Maybe a log4sh error occured."
 
+
+#=====
+# PID
+#=====
+trap "exit 1" TERM
+pipeline_pid="$$"
+echo -e "$pipeline_pid" | tee $OUTPUT_DIR/$(basename ${BASH_SOURCE[0]}).pid | logger_debug
+
+
 #=============
 # LOAD CONFIG
 #=============
