@@ -509,7 +509,7 @@ case $SKIP_PA in
 				velveth_opts=($(buildCommandLineOptions "velveth" "$NAMESPACE" "remove_equal" 2>${PA_ERROR}))
 				velveth_opts_sorted=($(shortenAndSortOptions "${velveth_opts[@]}" 2>${PA_ERROR}))
 				rtrn=$?
-				cli_opts_failed_msg="[$VH] An error occured while building $VH command line options for current sample ${OUTPUT_DIR%%/*}."
+				cli_opts_failed_msg="[$VH] An error occured while building $VH command line options for current sample ${SAMPLE_ID}."
 				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 				logger_debug "[$VH] $VH options: ${velveth_opts_sorted[@]}"
 				# build cli
