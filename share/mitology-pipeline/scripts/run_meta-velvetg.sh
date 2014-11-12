@@ -378,6 +378,14 @@ case $SKIP_CONFIG in
 		;;
 esac		
 
+#========
+# sample
+#========
+assembly_k="$(toupper ${NAMESPACE}_contig_assembler)_hash_length"
+SAMPLE_ID=$(basename ${PAIRED_END})
+[[ -s ${SINGLETONS} ]] && SAMPLE_ID+=".se"
+SAMPLE_ID+=".assembly_meta-velvetg_k${!assembly_k}"
+logger_info "Set the sample id to: $SAMPLE_ID"
 
 #=======================
 # CONTIGING/SCAFFOLDING
