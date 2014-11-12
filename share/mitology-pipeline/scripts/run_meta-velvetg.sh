@@ -553,7 +553,7 @@ case $SKIP_PA in
 				velvetg_opts=($(buildCommandLineOptions "velvetg" "$NAMESPACE" "remove_equal" 2>${PA_ERROR}))
 				velvetg_opts_sorted=($(shortenAndSortOptions "${velvetg_opts[@]}" 2>${PA_ERROR}))
 				rtrn=$?
-				cli_opts_failed_msg="[$VG] An error occured while building $VG  command line options for current sample ${OUTPUT_DIR%%/*}."
+				cli_opts_failed_msg="[$VG] An error occured while building $VG  command line options for current sample ${SAMPLE_ID}."
 				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 				logger_debug "[$VG] $VG options: ${velvetg_opts_sorted[@]}"
 				# build cli
