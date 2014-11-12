@@ -1086,6 +1086,25 @@ case "${!ASSEMBLER}" in
 		contiging_opts_sorted_cat="opts"$(echo "${contiging_opts_sorted[@]}" | sed -e 's/[ =]/_/g')
 		## contiging outdir
 		CONTIGING_OUTDIR=${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/${sample_assemblies_outdir}/${contigs_by}/k${!klen}/${contiging_opts_sorted_cat}
+		### no meta-velvetg exp_covs defined
+		if [[ ! "$contiging_opts_sorted_cat" =~ /_-exp_covs__/ ]]; then
+			contiging_opts_sorted_cat_no_mv_exp_covs=$(echo "$contiging_opts_sorted_cat" | sed 's/_-exp_covs_[0-9_]*_/_-exp_covs__/')
+			CONTIGING_NO_MV_EXP_COVS_OUTDIR=${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/${sample_assemblies_outdir}/${contigs_by}/k${!klen}/${contiging_opts_sorted_cat_no_mv_exp_covs}
+		fi
+
+		rename_pre_assembly_outdir()
+		{
+			if [[ -d $CONTIGING_NO_MV_EXP_COVS_OUTDIR ]]; then
+				logger_info "[$contigs_by] A previous pre-assembly output directory exists: $CONTIGING_NO_MV_EXP_COVS_OUTDIR"
+				logger_info "[$contigs_by] Rename directory: $CONTIGING_NO_MV_EXP_COVS_OUTDIR to $CONTIGING_OUTDIR"
+				mv $CONTIGING_NO_MV_EXP_COVS_OUTDIR $CONTIGING_OUTDIR 2>$ERROR_TMP
+				rtrn=$?
+				failed_rename_dir_msg="Cannot rename directory: $CONTIGING_NO_MV_EXP_COVS_OUTDIR to $CONTIGING_OUTDIR"
+				[[ "$rtrn" -ne 0 ]] && logger_fatal "$failed_rename_dir_msg"
+				exit_on_error "$ERROR_TMP" "$failed_rename_dir_msg" $rtrn "" $SESSION_TAG $EMAIL
+				logger_info "[$contigs_by] Done"
+			fi	
+		}
 
 		# define expected assembler output
 		eval "declare -A $(toupper ${NAMESPACE}_assembler_output)"
@@ -1096,7 +1115,7 @@ case "${!ASSEMBLER}" in
 		# build cli
 		filterabund_se="${assembly_input}[se]"
 		scaffold=no
-		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d 2>$ERROR_TMP | logger_debug &"
+		run_meta_velvetg_cli=( $SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d )
 
 		# check if contiging outdir exists 
 		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
@@ -1123,8 +1142,17 @@ case "${!ASSEMBLER}" in
 					;;
 				(false)
 					logger_info "[$contigs_by] Will run contiging step ..."
+					
+					# if MV no exp covs dir exist then rename it to $CONTIGING_OUTDIR
+					rename_pre_assembly_outdir
+					
 					#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 					run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+					rtrn=$?
+					logger_debug "[$MV] exit status: $rtrn"
+					run_MV_failed_msg="[$MV] Meta-velvetg script returns a non-zero status exit code. See $MV_ERROR file for more details."
+					exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+					
 					### TODO ###
 					# check for return status
 					## if the code is X (to define), then warn the user to evaluate manually the expected coverage peaks or set it to auto and finally exit
@@ -1139,6 +1167,10 @@ case "${!ASSEMBLER}" in
 		else
 			# run contiging
 			logger_info "[$contigs_by] Will run contiging step ..."
+			
+			# if MV no exp covs dir exist then rename it to $CONTIGING_OUTDIR
+			rename_pre_assembly_outdir
+			
 			#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
 			run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
 			### TODO ###
