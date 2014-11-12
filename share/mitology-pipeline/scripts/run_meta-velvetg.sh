@@ -592,15 +592,67 @@ case $SKIP_PA in
 		;;
 esac
 
-### TODO ###
-
 #
 # ASSEMBLY
 #
+ASBL="Assembly"
+ASBL_ERROR=$OUTPUT_DIR/${ASBL}.err
 
+# if MV_exp_covs not null
+# warn the user to check the current exp_covs values with the expected coverage peaks in the rplot output
+# else
+# exit with the same warning message and add to fill in the exp_covs values in the config file
+MV_exp_covs="$(toupper ${NAMESPACE}_meta_velvetg)_exp_covs"
+MV_exp_covs_warning="[$ASBL] Current meta-velvetg expected coverage peaks are, $([[ -z ${!MV_exp_covs} ]] && echo "NULL" || echo ${!MV_exp_covs}). \
+Please check those values to fit those in the length-weighted kmer coverage histogram, $OUTPUT_DIR/${velvetg_output[weighted_hist]}."
+if [[ -n ${!MV_exp_covs} ]]; then
+	logger_warn "$MV_exp_covs_warning"
+else
+	logger_warn "$MV_exp_covs_warning"
+	MV_exp_covs_recom="[$ASBL] Then fill in the config file with the expected coverage peaks values, and run again the pipeline to complete the assembly."
+	logger_warn "$MV_exp_covs_recom"
+	echo -e "$MV_exp_covs_warning" 1>&2
+	echo -e "$MV_exp_covs_recom" 1>&2
+	#echo 1 >$OUTPUT_DIR/${PA}.exit-status
+	#kill -s TERM $pipeline_pid
+	exit 1
+fi
 
+case $SKIP_MV in
+	(true)
+		logger_info "[$ASBL] Skip assembly step ... "
+		logger_debug "[$ASBL] Expected meta-velvetg output files already exist: "
+		logger_debug "[$ASBL] - ${!MV_contigs}"
+		[[ ${!amos} -eq "yes" && -s ${!MV_afg} ]] && logger_debug "[$ASBL] - ${!MV_afg}"
+		logger_info "[$ASBL] Skip meta-velvetg assembly step ... "
+		;;
+	(false)
+		logger_info "[$ASBL] Running the assembly step ... "
+		logger_info "[$ASBL] Run meta-velvetg step ... "
 
+		# meta-velvetg
+		meta_velvetg_path="$(toupper ${NAMESPACE}_paths)_metavelvetg"
+		MV="${!meta_velvetg_path##*/}"
+		MV_ERROR=$OUTPUT_DIR/${MV}.err
 
+		## build cli options
+		meta_velvetg_opts=($(buildCommandLineOptions "meta_velvetg" "$NAMESPACE" "remove_equal" 2>${MV_ERROR}))
+		meta_velvetg_opts_sorted=($(shortenAndSortOptions "${meta_velvetg_opts[@]}" 2>${MV_ERROR}))
+		[[ $SCAFFOLD == "yes" ]] && meta_velvetg_opts_sorted_str=$(echo "${meta_velvetg_opts_sorted[@]}" | sed -e 's/scaffolding no/scaffolding yes/') || meta_velvetg_opts_sorted_str=$(echo "${meta_velvetg_opts_sorted[@]}" | sed -e 's/scaffolding yes/scaffolding no/')
+		rtrn=$?
+		cli_opts_failed_msg="[$MV] An error occured while building $MV command line options for current sample ${SAMPLE_ID}."
+		exit_on_error "${MV_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+		logger_debug "[$MV] $MV options: ${meta_velvetg_opts_sorted_str}"
+		## build cli
+		meta_velvetg_cli="${!meta_velvetg_path} $OUTPUT_DIR $meta_velvetg_opts_sorted_str 2>${MV_ERROR} | logger_debug"
+		
+		## run cli
+		run_cli -c "$meta_velvetg_cli" -t "$MV" -e "$MV_ERROR" -E "$ASBL_ERROR"
+
+		## symlink ### TODO ###
+		[[ -s ${!MV_contigs} ]] && ln -s $(basename ${!MV_contigs}) $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa || logger_warn "[$MV] Meta-velvetg contigs fasta file, ${!MV_contigs}, does not exist. Cannot symlink ${!MV_contigs} to $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa"
+		;;
+esac
 
 
 
