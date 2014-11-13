@@ -645,10 +645,11 @@ case $SKIP_MV in
 		exit_on_error "${MV_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 		logger_debug "[$MV] $MV options: ${meta_velvetg_opts_sorted_str}"
 		## build cli
-		meta_velvetg_cli="${!meta_velvetg_path} $OUTPUT_DIR $meta_velvetg_opts_sorted_str 2>${MV_ERROR} | logger_debug"
+		meta_velvetg_cli="${!meta_velvetg_path} $OUTPUT_DIR $meta_velvetg_opts_sorted_str"
+		#meta_velvetg_cli+=" 2>${MV_ERROR} | logger_debug"
 		
 		## run cli
-		run_cli -c "$meta_velvetg_cli" -t "$MV" -e "$MV_ERROR" -E "$ASBL_ERROR"
+		run_cli -c "$meta_velvetg_cli" -t "$MV" -e "$MV_ERROR" -d
 
 		## symlink ### TODO ###
 		[[ -s ${!MV_contigs} ]] && ln -s $(basename ${!MV_contigs}) $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa || logger_warn "[$MV] Meta-velvetg contigs fasta file, ${!MV_contigs}, does not exist. Cannot symlink ${!MV_contigs} to $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa"
