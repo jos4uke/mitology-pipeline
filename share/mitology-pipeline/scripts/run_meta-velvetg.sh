@@ -495,6 +495,30 @@ PA_ERROR=$OUTPUT_DIR/${PA}.err
 case $SKIP_PA in
 	(true)
 		logger_info "[$PA] Skip pre-assembly step ... "
+		
+		# velveth
+		logger_debug "[$PA] Expected velveth output files already exist: "
+		logger_debug "[$PA] - ${!VH_Roadmaps}"
+		logger_debug "[$PA] - ${!VH_Sequences}"
+        if [[ $(realpath $OUTPUT_DIR) != $(realpath $PA_DIR) ]]; then
+            logger_debug "[$PA] Will link files to the current output directory"
+            ln -s $(realpath ${!VH_Roadmaps}) ${OUTPUT_DIR}/${velveth_output[Roadmaps]}
+            ln -s $(realpath ${!VH_Sequences}) ${OUTPUT_DIR}/${velveth_output[Sequences]}
+            [[ -e ${OUTPUT_DIR}/${velveth_output[Roadmaps]} ]] && logger_debug "[$PA] ${velveth_output[Roadmaps]} symlinked" || logger_warn "[$PA] ${velveth_output[Roadmaps]} not symlinked"
+            [[ -e ${OUTPUT_DIR}/${velveth_output[Sequences]} ]] && logger_debug "[$PA] ${velveth_output[Sequences]} symlinked" || logger_warn "[$PA] ${velveth_output[Sequences]} not symlinked"
+        fi
+
+		# velvetg
+		logger_debug "[$VG] Expected velvetg output files already exist: "
+        logger_debug "[$VG] - ${!VG_Graph2}"
+        logger_debug "[$VG] - ${!VG_stats}"
+        if [[ $(realpath $OUTPUT_DIR) != $(realpath $PA_DIR) ]]; then
+            logger_debug "[$VG] Will link files to the current output directory"
+            ln -s $(realpath ${!VG_Graph2}) ${OUTPUT_DIR}/${velvetg_output[Graph2]}
+            ln -s $(realpath ${!VG_stats}) ${OUTPUT_DIR}/${velvetg_output[stats]}
+            [[ -e ${OUTPUT_DIR}/${velvetg_output[Graph2]} ]] && logger_debug "[$VG] ${velvetg_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[Graph2]} not symlinked"
+            [[ -e ${OUTPUT_DIR}/${velvetg_output[stats]} ]] && logger_debug "[$VG] ${velvetgh_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[stats]} not symlinked"
+        fi
 		;;
 	(false)
 		logger_info "[$PA] Running the pre-assembly step ... "
@@ -508,6 +532,14 @@ case $SKIP_PA in
 				logger_debug "[$VH] Expected velveth output files already exist: "
 				logger_debug "[$VH] - ${!VH_Roadmaps}"
 				logger_debug "[$VH] - ${!VH_Sequences}"
+				if [[ $(realpath $OUTPUT_DIR) != $(realpath $PA_DIR) ]]; then
+					logger_debug "[$VH] Will link files to the current output directory"
+					ln -s $(realpath ${!VH_Roadmaps}) ${OUTPUT_DIR}/${velveth_output[Roadmaps]}
+					ln -s $(realpath ${!VH_Sequences}) ${OUTPUT_DIR}/${velveth_output[Sequences]}
+					[[ -e ${OUTPUT_DIR}/${velveth_output[Roadmaps]} ]] && logger_debug "[$VH] ${velveth_output[Roadmaps]} symlinked" || logger_warn "[$VH] ${velveth_output[Roadmaps]} not symlinked" 
+					[[ -e ${OUTPUT_DIR}/${velveth_output[Sequences]} ]] && logger_debug "[$VH] ${velveth_output[Sequences]} symlinked" || logger_warn "[$VH] ${velveth_output[Sequences]} not symlinked"
+				fi
+
 				logger_info "[$VH] Skip velveth pre-assembly step ... "
 				;;
 			(false)
@@ -543,6 +575,14 @@ case $SKIP_PA in
 				logger_debug "[$VG] Expected velvetg output files already exist: "
 				logger_debug "[$VG] - ${!VG_Graph2}"
 				logger_debug "[$VG] - ${!VG_stats}"
+				if [[ $(realpath $OUTPUT_DIR) != $(realpath $PA_DIR) ]]; then
+                    logger_debug "[$VG] Will link files to the current output directory"
+                    ln -s $(realpath ${!VG_Graph2}) ${OUTPUT_DIR}/${velvetg_output[Graph2]}
+                    ln -s $(realpath ${!VG_stats}) ${OUTPUT_DIR}/${velvetg_output[stats]}
+                    [[ -e ${OUTPUT_DIR}/${velvetg_output[Graph2]} ]] && logger_debug "[$VG] ${velvetg_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[Graph2]} not symlinked"
+                    [[ -e ${OUTPUT_DIR}/${velvetg_output[stats]} ]] && logger_debug "[$VG] ${velvetgh_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[stats]} not symlinked"
+                fi
+
 				logger_info "[$VG] Skip velvetg pre-assembly step ... "
 				;;
 			(false)
