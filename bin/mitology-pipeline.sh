@@ -649,7 +649,7 @@ else
 	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $INTERLEAVING_SUBDIR_PATH directory was created successfully. Will output interleaving output files in this directory."
 	# run step
 	logger_info "[$INTERLEAVING_SUBDIR] Will run interleaving step ..."
-	run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+	run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -d
 fi
 
 #
