@@ -802,11 +802,11 @@ filterabund_input_hashcount="${filterabund_input}[input_presence_table_filename]
 filterabund_input_R1="${filterabund_input}[input_sequence_filename_R1]"
 filterabund_input_R2="${filterabund_input}[input_sequence_filename_R2]"
 filterabund_input_interleaved="${filterabund_input}[input_sequence_filename_interleaved]"
-filterabund_cli="${!khmer_filter_abund} $filterabund_opts \
-	-o ${!filterabund_output['out']} \
-	${!filterabund_input_hashcount} \
-	${!filterabund_input_interleaved} \
-	2>${FILTERABUND_ERROR} | logger_debug &"
+filterabund_cli="${!khmer_filter_abund} $filterabund_opts"
+filterabund_cli+=" -o ${!filterabund_output['out']}"
+filterabund_cli+=" ${!filterabund_input_hashcount}"
+filterabund_cli+=" ${!filterabund_input_interleaved}"
+#filterabund_cli+=" 2>${FILTERABUND_ERROR} | logger_debug"
 
 # check if filterabund subdir exists else create 
 # set filterabund step input vars (see previous LINK step)
@@ -824,7 +824,7 @@ if [[ -d $FILTERABUND_SUBDIR_PATH ]]; then
 	else
 		# run step
 		logger_info "[$FILTERABUND_SUBDIR] Will run filterabund step ... "
-		run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+		run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -d
 	fi
 else
 	# create subdir
@@ -835,7 +835,7 @@ else
 	exit_on_error "$KMER_FILTER_ABUND_ERROR" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
 	# run step
 	logger_info "[$FILTERABUND_SUBDIR] Will run filterabund step ... "
-	run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+	run_cli -c "$filterabund_cli" -t "$FILTERABUND_SUBDIR" -e "$FILTERABUND_ERROR" -d
 fi
 
 #
