@@ -866,7 +866,8 @@ eval "${extractpairs_output}+=( [se]=${!filterabund_output['out']}.se )"
 # build cli
 declare -r khmer_extract_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_extract_paired_reads
 extractpairs_input_filterabund="${extractpairs_input}[infile]"
-extractpairs_cli="cd $EXTRACTPAIRS_SUBDIR_PATH; ${!khmer_extract_paired_reads} $(basename ${!extractpairs_input_filterabund}) 2>$(basename ${EXTRACTPAIRS_ERROR}) | logger_debug &"
+extractpairs_cli="cd $EXTRACTPAIRS_SUBDIR_PATH; ${!khmer_extract_paired_reads} $(basename ${!extractpairs_input_filterabund})"
+extractpairs_cli+=" 2>$(basename ${EXTRACTPAIRS_ERROR}) | logger_debug"
 
 # no need to check for extractpairs output dir, nor to create it
 # set extractpairs step input vars (see previous LINK step)
@@ -906,7 +907,7 @@ if [[ -d $EXTRACTPAIRS_SUBDIR_PATH ]]; then
 		# run
 		(false)
 			logger_info "[$EXTRACTPAIRS_SUBDIR] Will run extractpairs step ... "
-			run_cli -c "$extractpairs_cli" -t "$EXTRACTPAIRS_SUBDIR" -e "$EXTRACTPAIRS_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+			run_cli -c "$extractpairs_cli" -t "$EXTRACTPAIRS_SUBDIR" -e "$EXTRACTPAIRS_ERROR" -d 
 			cd "$WORKING_DIR"
 			;;
 	esac
