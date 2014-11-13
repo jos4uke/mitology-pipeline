@@ -527,10 +527,10 @@ case $SKIP_PA in
 				velveth_cli="${!velveth_path} $OUTPUT_DIR ${!assembly_k} ${velveth_format_type} ${velveth_read_type_pe} ${PAIRED_END}"
 				[[ -s $SINGLETONS ]] && velveth_cli+=" ${velveth_format_type_se} ${SINGLETONS}"
 				velveth_cli+=" ${velveth_opts_sorted[@]}"
-				velveth_cli+=" 2>$VH_ERROR | logger_debug &"
+				#velveth_cli+=" 2>$VH_ERROR | logger_debug"
 
 				# run cli
-				run_cli -c "$velveth_cli" -t "$VH" -e "$VH_ERROR" -E "$PA_ERROR"					
+				run_cli -c "$velveth_cli" -t "$VH" -e "$VH_ERROR" -d					
 				;;	
 		esac	
 
