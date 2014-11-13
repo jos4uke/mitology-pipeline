@@ -556,10 +556,11 @@ case $SKIP_PA in
 				exit_on_error "${PA_ERROR}" "$cli_opts_failed_msg" "$rtrn" "$OUTPUT_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 				logger_debug "[$VG] $VG options: ${velvetg_opts_sorted[@]}"
 				# build cli
-				velvetg_cli="${!velvetg_path} $OUTPUT_DIR ${velvetg_opts_sorted[@]} 2>${VG_ERROR} | logger_debug &"
+				velvetg_cli="${!velvetg_path} $OUTPUT_DIR ${velvetg_opts_sorted[@]}"
+				#velvetg_cli+=" 2>${VG_ERROR} | logger_debug"
 				
 				# run cli
-				run_cli -c "$velvetg_cli" -t "$VG" -e "$VG_ERROR" -E "$PA_ERROR"
+				run_cli -c "$velvetg_cli" -t "$VG" -e "$VG_ERROR" -d
 				;;
 		esac
 
