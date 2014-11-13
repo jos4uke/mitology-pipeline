@@ -1205,6 +1205,99 @@ esac
 # SCAFFOLDING
 #
 
+declare -r SCAFFOLDER=$(toupper ${NAMESPACE}_scaffolder)_name
+logger_info "[$ASSEMBLY_OUTDIR] Use ${!SCAFFOLDER} as the scaffolder."
+
+# scaffolding output directory
+scaffolds_by="scaffolding_by_${!ASSEMBLER}"
+
+# run scaffolder
+case "${!SCAFFOLDER}" in
+    "meta-velvetg")
+        # set scaffolder vars
+        klen="${assembly_input}[k]"
+        ## build scaffolding options
+        # use meta_velvetg as written in the config file not meta-velevetg, the actual assembler name, because config parser does not allow hyphen in section name
+        scaffolding_opts=($(buildCommandLineOptions "meta_velvetg" "$NAMESPACE" 2>$ASSEMBLY_ERROR))
+        scaffolding_opts_sorted=($(shortenAndSortOptions "${scaffolding_opts[@]}" 2>$ASSEMBLY_ERROR))
+        scaffolding_opts_sorted_cat="opts"$(echo "${scaffolding_opts_sorted[@]}" | sed -e 's/[ =]/_/g')
+        ## scaffolding outdir
+        SCAFFOLDING_OUTDIR=${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/${sample_assemblies_outdir}/${scaffolds_by}/k${!klen}/${scaffolding_opts_sorted_cat}
+ 
+		# define expected scaffolder output
+        eval "declare -A $(toupper ${NAMESPACE}_scaffolder_output)"
+        declare -r scaffolder_output=$(toupper ${NAMESPACE}_scaffolder_output)
+        scaffolder_contigs=$SCAFFOLDING_OUTDIR/meta-velvetg.contigs.fa
+        eval "${scaffolder_output}=( [contigs]=$scaffolder_contigs )"
+
+        # build cli
+        filterabund_se="${assembly_input}[se]"
+        scaffold=yes
+        run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $SCAFFOLDING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d --pre_assembly_dir $CONTIGING_OUTDIR"
+
+		# check if scaffolding outdir exists
+        # exists: check for expected scaffolder contigs output => exists skip scaffolding else run scaffolding
+        # not exist: run scaffolding 
+        logger_info "[$scaffolds_by] Checking for $SCAFFOLDING_OUTDIR directory ..."
+        if [[ -d $SCAFFOLDING_OUTDIR ]]; then
+            logger_debug "[$scaffolds_by] OK $SCAFFOLDING_OUTDIR directory already exists. Will check for already existing output files."
+
+            # check for existing output files
+            scaffolding_skip=false
+            ## scaffolder_contigs : mandatory
+            if [[ -s $scaffolder_contigs ]]; then
+                scaffolding_skip=true
+                logger_info "[$scaffolds_by] Output file already exists: $scaffolder_contigs"
+            else
+                scaffolding_skip=false
+                logger_warn "[$scaffolds_by] Output file, ${scaffolder_contigs}, does not exist. Should run scafflding step."
+            fi
+
+			# run or skip step
+            case $scaffolding_skip in
+                (true)
+                    logger_info "[$scaffolds_by] Skip scaffolding step."
+                    ;;
+                (false)
+                    logger_info "[$scaffolds_by] Will run scaffolding step ..."
+
+                    $run_meta_velvetg_cli 2>$ERROR_TMP &
+                    pid=$!
+                    wait $pid
+                    rtrn=$?
+                    pid_file="run_meta-velvetg.sh.pid"
+                    [[ -s $SCAFFOLDING_OUTDIR/$pid_file ]] && pid=$(cat $SCAFFOLDING_OUTDIR/$pid_file)
+                    status_file="${pid_file%.pid}.exit-status"
+                    echo $rtrn >$SCAFFOLDING_OUTDIR/$status_file
+                    logger_debug "[$scaffolds_by] pid, ${pid}, exit status: $rtrn"
+                    run_MV_failed_msg="[$scaffolds_by] Meta-velvetg script returns a non-zero status exit code. See $MV_ERROR file for more details."
+                    exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+                    ;;
+            esac
+		else
+			logger_info "[$scaffolds_by] Will run scaffolding step ..."
+
+            $run_meta_velvetg_cli 2>$ERROR_TMP &
+            pid=$!
+            wait $pid
+            rtrn=$?
+            pid_file="run_meta-velvetg.sh.pid"
+            [[ -s $SCAFFOLDING_OUTDIR/$pid_file ]] && pid=$(cat $SCAFFOLDING_OUTDIR/$pid_file)
+            status_file="${pid_file%.pid}.exit-status"
+            echo $rtrn >$SCAFFOLDING_OUTDIR/$status_file
+            logger_debug "[$scaffolds_by] pid, ${pid}, exit status: $rtrn"
+            run_MV_failed_msg="[$scaffolds_by] Meta-velvetg script returns a non-zero status exit code. See $MV_ERROR file for more details."
+            exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+		fi
+		;;
+esac
+
+
+
+
+
+
+
 ### close assembly debug logger
 appender_exists assemblyDebugF && appender_close assemblyDebugF
 
