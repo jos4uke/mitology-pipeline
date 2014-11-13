@@ -948,7 +948,8 @@ eval "${splitpairs_output}+=( [pe.2]=${!extractpairs_pe}.2 )"
 # build cli
 declare -r khmer_split_paired_reads=$(toupper ${NAMESPACE}_paths)_khmer_split_paired_reads
 splitpairs_input_filterabund_pe="${splitpairs_input}[infile]"
-splitpairs_cli="cd $SPLITPAIRS_SUBDIR_PATH; ${!khmer_split_paired_reads} $(basename ${!splitpairs_input_filterabund_pe}) 2>$(basename $SPLITPAIRS_ERROR) | logger_debug &"
+splitpairs_cli="cd $SPLITPAIRS_SUBDIR_PATH; ${!khmer_split_paired_reads} $(basename ${!splitpairs_input_filterabund_pe})"
+#splitpairs_cli+=" 2>$(basename $SPLITPAIRS_ERROR) | logger_debug"
 
 # no need to check for splitpairs output dir, nor to create it
 # set splitpairs step input vars (see previous LINK step)
@@ -981,7 +982,7 @@ if [[ -d $SPLITPAIRS_SUBDIR_PATH ]]; then
 			;;
 		(false)
 			logger_info "[$SPLITPAIRS_SUBDIR] Will run splitpairs step ... "
-			run_cli -c "$splitpairs_cli" -t "$SPLITPAIRS_SUBDIR" -e "$SPLITPAIRS_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+			run_cli -c "$splitpairs_cli" -t "$SPLITPAIRS_SUBDIR" -e "$SPLITPAIRS_ERROR" -d
 			cd "$WORKING_DIR"
 			;;
 	esac
