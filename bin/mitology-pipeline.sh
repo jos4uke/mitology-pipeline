@@ -1118,7 +1118,7 @@ case "${!ASSEMBLER}" in
 		# build cli
 		filterabund_se="${assembly_input}[se]"
 		scaffold=no
-		run_meta_velvetg_cli=( $SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d )
+		run_meta_velvetg_cli="$SCRIPTS_PATH/run_meta-velvetg.sh -o $CONTIGING_OUTDIR -N $NAMESPACE -P ${!filterabund_pe} -S ${!filterabund_se} --scaffold $scaffold --skip_config -d"
 
 		# check if contiging outdir exists 
 		# exists: check for expected assembler contigs output => exists skip contiging else run contiging
@@ -1150,21 +1150,18 @@ case "${!ASSEMBLER}" in
 					rename_pre_assembly_outdir
 					
 					#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
-					run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+					#run_one_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP"
+					$run_meta_velvetg_cli 2>$ERROR_TMP &
+					pid=$!
+					wait $pid
 					rtrn=$?
-					logger_debug "[$MV] exit status: $rtrn"
-					run_MV_failed_msg="[$MV] Meta-velvetg script returns a non-zero status exit code. See $MV_ERROR file for more details."
+					pid_file="run_meta-velvetg.sh.pid"
+            		[[ -s $CONTIGING_OUTDIR/$pid_file ]] && pid=$(cat $CONTIGING_OUTDIR/$pid_file)
+            		status_file="${pid_file%.pid}.exit-status"
+            		echo $rtrn >$CONTIGING_OUTDIR/$status_file
+            		logger_debug "[$contigs_by] pid, ${pid}, exit status: $rtrn"
+					run_MV_failed_msg="[$contigs_by] Meta-velvetg script returns a non-zero status exit code. See $MV_ERROR file for more details."
 					exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
-					
-					### TODO ###
-					# check for return status
-					## if the code is X (to define), then warn the user to evaluate manually the expected coverage peaks or set it to auto and finally exit
-				   	## check for contigs
-					# exists then set the assembly_output hash with the its path
-					# no exist: warn and exit
-					## check for Graph2
-					# exists then set the assmbler_output hash with its path
-					# no exist: warn that scaffolding can't be run without that file but no need to exit because if not present the scaffolder will run velveth/velvetg (again) to have one
 					;;
 			esac
 		else
@@ -1175,7 +1172,18 @@ case "${!ASSEMBLER}" in
 			rename_pre_assembly_outdir
 			
 			#logger_debug "[$contigs_by] meta-velvetg cli: $run_meta_velvetg_cli"
-			run_cli -c "$run_meta_velvetg_cli" -t "$contigs_by" -e "$ERROR_TMP" -E "$ASSEMBLY_ERROR"
+			#run_one_cli -c "${run_meta_velvetg_cli}" -t "$contigs_by" -e "$ERROR_TMP"
+			$run_meta_velvetg_cli 2>$ERROR_TMP &
+			pid=$!
+			wait $pid
+			rtrn=$?
+			pid_file="run_meta-velvetg.sh.pid"
+			[[ -s $CONTIGING_OUTDIR/$pid_file ]] && pid=$(cat $CONTIGING_OUTDIR/$pid_file)
+			status_file="${pid_file%.pid}.exit-status"
+			echo $rtrn >$CONTIGING_OUTDIR/$status_file
+			logger_debug "[$contigs_by] pid, ${pid}, exit status: $rtrn"
+			run_MV_failed_msg="[$contigs_by] Meta-velvetg script returns a non-zero status exit code. See $OUTPUT_DIR/$LOG_DIR/$DEBUGFILE file for more details."
+			exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 			### TODO ###
 			# see previous checkings
 		fi
