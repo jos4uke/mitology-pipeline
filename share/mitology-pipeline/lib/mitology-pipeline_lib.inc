@@ -37,18 +37,142 @@ shortenAndSortOptions() {
 
 #----------------------------------------------------------
 # Function: run_cli
-# Purpose: wrap a command line and manage its execution
-run_cli() {
+# Purpose: wrap one command line and manage its execution
+run_cli()
+{
+ # usage
+    run_cli_usage() {
+        printf %s "\
+        Usage: run_cli [-h|--help] -c|--cmd COMMAND -t|--tag TAG -e|--cmd_err COMMAND_ERR_FILE [-d|--debug]
+
+        Mandatory:
+        -c|--cmd COMMAND                The command line in COMMAND to execute
+        -t|--tag TAG                    The tag in TAG to report messages for log
+        -e|--cmd_err COMMAND_ERR_FILE   The standard error file in COMMAND_ERR_FILE to catch errors while executing the command line
+        -d|--debug                      enable debug logging by piping log4sh logger_debug to the COMMAND stdout
+
+        Options:
+        -h|--help                       Displays this message.
+
+    "
+    }
+
+    # opts
+    local my_opts=`getopt -o hc:t:e:d --long help,cmd:,tag:,cmd_err:,debug \
+        -n 'run_cli' -- "$@"`
+
+    if [[ $? != 0 ]]; then run_cli_usage >&2; exit 1; fi
+
+	# eval opts
+    eval set -- "$my_opts"
+
+    while true; do
+        case "$1" in
+            -h | --help ) run_cli_usage >&2; exit 1;;
+            -c | --cmd ) local my_cli=$2; shift 2;;
+            -t | --tag ) local my_tag="run_$2"; shift 2;;
+            -e | --cmd_err ) local my_cmd_err=$2; shift 2;;
+            -d | --debug ) local my_DEBUG=true; shift ;;
+            -- ) shift; break;;
+            * ) break;;
+        esac
+    done
+
+    # validate
+    if [[ -z $my_cli ]]; then logger_fatal "[run_cli] Command line string, $my_cli, must be not null. See Usage with --help option."; exit 1; fi
+    if [[ -z $my_tag ]]; then logger_fatal "[run_cli] Tag string, $my_tag, must be not null. See Usage with --help option."; exit 1; fi
+    if [[ ! -d $(dirname $my_cmd_err) ]]; then logger_fatal "[run_cli] Parent directory of the command line error file, $my_cmd_err, must exist. See Usage with --help option."; exit 1; fi
+
+    # current directory
+    local CWD=$(pwd)
+
+	# cmd/outDir
+    local cmd=$(basename $(echo -e "${my_cli##$prefix}" | cut -d" " -f1))
+    local outDir="$(dirname $my_cmd_err)"
+    if [[ -d $outDir ]]; then
+        local cmd_pid_file="$outDir/${cmd}.pid"
+    else
+        local outDir="$CWD/$outDir"
+        local cmd_pid_file="$outDir/${cmd}.pid"
+    fi
+
+    local errDir=$(dirname $my_cmd_err)
+    if [[ ! -d $errDir ]]; then
+        my_cmd_err=$CWD/$my_cmd_err
+    fi
+
+	#
+    # run
+    #
+    # logging calls resolution depend on parent script which is supposed to load log4sh
+    logger_debug "[$my_tag] $my_cli"
+
+    #if [[ "$my_DEBUG" == true ]]; then
+    #   $my_cli 2>$CWD/$my_cmd_err &
+    #   pid=$!
+    #else
+	($my_cli 2>$my_cmd_err & echo $! >&3) 3>$cmd_pid_file | logger_debug 
+	#pid=$!
+    #fi
+
+	pid=$(cat $cmd_pid_file)
+    logger_debug "$cmd pid: $pid"
+    #echo $pid >$cmd_pid_file
+    logger_trace "$cmd pid: $pid saved to file $cmd_pid_file"
+
+	# GLOBALS: $OUTPUT_DIR, $LOG_DIR, $DEBUGFILE, $SESSION_TAG, $EMAIL, $PIDS_ARR
+    #exit_on_error "$CWD/$my_cmd_err" "$eval_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+
+    # add pid to array
+    #local cmd_ps=$(ps aux | grep $USER | grep -v grep | grep "$(echo -e "${my_cli##$prefix}" | cut -d" " -f1-4)")
+    #[[ -n $cmd_ps ]] && logger_trace "$cmd ps: $cmd_ps"
+    #[[ -z $cmd_ps ]] && logger_trace "$cmd ps: $(ps aux | grep $USER | grep -v grep | grep $pid)"
+    local PIDS_ARR=()
+    PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
+    ## wait until command line process finish and reinit pid array
+    for p in "${PIDS_ARR[@]}"; do
+        local pid_list_failed_msg="[$my_tag] Failed getting process status for process $p."
+        logger_trace "[$my_tag] $(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>$my_cmd_err)"
+        local rtrn=$?
+        exit_on_error "$my_cmd_err" "$pid_list_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+    done
+    logger_debug "[$my_tag] Wait for all $cmd processes to finish before proceeding to next step."
+    local waitall_file="$outDir/${cmd}.waitall.$(date '+%Y%m%d%H%M%S').log"
+    waitalluntiltimeout "${PIDS_ARR[@]}" 2>"$waitall_file"
+    wait $pid
+    local status=$?
+    logger_debug "$cmd pid status: $status"
+    cmd_status_file=${cmd_pid_file%.pid}.exit-status
+    echo $status >$cmd_status_file
+    logger_debug "$cmd pid status: $status saved to $cmd_status_file"
+    if [[ -s $my_cmd_err ]]; then
+        logger_warn "[$my_tag] Some messages were thrown to standard error while executing $my_cli . See $my_cmd_err for more details."
+    fi
+    logger_debug "[$my_tag] All $cmd processes finished."
+    PIDS_ARR=()
+
+	if [[ -n last_line=$(tail -1 "$waitall_file" | grep " $pid exited with non-zero exit status") ]]; then
+        pid_status_error_msg="[$my_tag] $last_line"
+        logger_warn "$pid_status_error_msg"
+    else
+        logger_debug "[$my_tag] $(tail -1 "$waitall_file" | grep " $pid exited with zero exit status")"
+    fi
+    return $status
+}
+
+#----------------------------------------------------------
+# Function: run_one_cli
+# Purpose: wrap one command line and manage its execution
+run_one_cli() {
 	# usage
 	run_cli_usage() { 
 		printf %s "\
-		Usage: run_cli [-h|--help] -c|--cmd COMMAND -t|--tag TAG -e|--cli_err COMMAND_ERR_FILE -E|--eval_err EVAL_ERR_FILE
+		Usage: run_one_cli [-h|--help] -c|--cmd COMMAND -t|--tag TAG -e|--cmd_err COMMAND_ERR_FILE
 		
 		Mandatory:
-		-c|--cmd COMMAND				The command line in COMMAND to execute
-		-t|--tag TAG					The tag in TAG to report messages for log
-		-e|--cli_err COMMAND_ERR_FILE	The standard error file in COMMAND_ERR_FILE to catch errors when executing the command line
-		-E|--eval_err EVAL_ERR_FILE		The standard error file in EVAL_ERR_FILE to catch errors when evaluating the command line	
+		-c|--cmd COMMAND                The command line in COMMAND to execute
+		-t|--tag TAG                    The tag in TAG to report messages for log
+		-e|--cli_err COMMAND_ERR_FILE   The standard error file in COMMAND_ERR_FILE to catch errors while executing the command line
 
 		Options:
 		-h|--help						Displays this message.
@@ -57,8 +181,8 @@ run_cli() {
 	}
 
 	# opts
-	local my_opts=`getopt -o hc:t:e:E: --long help,cmd:,tag:,cmd_err:,eval_err: \
-		-n 'run_cli' -- "$@"`
+	local my_opts=`getopt -o hc:t:e: --long help,cmd:,tag:,cmd_err: \
+		-n 'run_one_cli' -- "$@"`
 
 	if [[ $? != 0 ]]; then run_cli_usage >&2; exit 1; fi
 
@@ -69,9 +193,8 @@ run_cli() {
 		case "$1" in
 			-h | --help ) run_cli_usage >&2; exit 1;;
 			-c | --cmd ) local my_cli=$2; shift 2;;
-			-t | --tag ) local my_tag=$2; shift 2;;
-			-e | --cli_err ) local my_cli_err=$2; shift 2;;
-			-E | --eval_err ) local my_eval_err=$2; shift 2;;
+			-t | --tag ) local my_tag="run_$2"; shift 2;;
+			-e | --cmd_err ) local my_cmd_err=$2; shift 2;;
 			-- ) shift; break;;
 			* ) break;;
 		esac
@@ -80,44 +203,82 @@ run_cli() {
 	# validate
 	if [[ -z $my_cli ]]; then logger_fatal "[run_cli] Command line string, $my_cli, must be not null. See Usage with --help option."; exit 1; fi
 	if [[ -z $my_tag ]]; then logger_fatal "[run_cli] Tag string, $my_tag, must be not null. See Usage with --help option."; exit 1; fi
-	if [[ ! -d $(dirname $my_cli_err) ]]; then logger_fatal "[run_cli] Parent directory of the command line error file, $my_cli_err, must exist. See Usage with --help option."; exit 1; fi
-	if [[ ! -d $(dirname $my_eval_err) ]]; then logger_fatal "[run_cli] Parent directory of the eval command line error file, $my_eval_err, must exist. See Usage with --help option."; exit 1; fi
+	if [[ ! -d $(dirname $my_cmd_err) ]]; then logger_fatal "[run_cli] Parent directory of the command line error file, $my_cmd_err, must exist. See Usage with --help option."; exit 1; fi
 	
 	# current directory
 	local CWD=$(pwd)
 
 	# cli prefix to remove
-	local prefix="cd*;[[:space:]]"
+	local prefix="cd*;[[:space:]]*"
+
+	# cmd/outDir
+    local cmd=$(basename $(echo -e "${my_cli##$prefix}" | cut -d" " -f1))
+    local outDir="$(dirname $my_cmd_err)"
+    if [[ -d $outDir ]]; then
+        local cmd_pid_file="$outDir/${cmd}.pid"
+    else
+        local outDir="$CWD/$outDir"
+        local cmd_pid_file="$outDir/${cmd}.pid"
+    fi
+
+	local errDir=$(dirname $my_cmd_err)
+	if [[ ! -d $errDir ]]; then
+		my_cmd_err=$CWD/$my_cmd_err	
+	fi
 	
 	#
 	# run
 	#
 	# logging calls resolution depend on parent script which is supposed to load log4sh
 	logger_debug "[$my_tag] $my_cli"
-	eval  "$my_cli" 2>$CWD/$my_eval_err
-	local pid=$!
-	local rtrn=$?
-	local eval_failed_msg="[$my_tag] An error occured while eval $my_cli command line."
+	
+	($my_cli 2>$my_cmd_err & echo $! >&3) 3>$cmd_pid_file | logger_debug
+	#pid=$!
+
+	pid=$(cat $cmd_pid_file)
+	logger_debug "$cmd pid: $pid"
+	#echo $pid >$cmd_pid_file
+	logger_trace "$cmd pid: $pid saved to file $cmd_pid_file"
+
 	# GLOBALS: $OUTPUT_DIR, $LOG_DIR, $DEBUGFILE, $SESSION_TAG, $EMAIL, $PIDS_ARR
-	exit_on_error "$CWD/$my_eval_err" "$eval_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+	#exit_on_error "$CWD/$my_cmd_err" "$eval_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 	
 	# add pid to array
+	#local cmd_ps=$(ps aux | grep $USER | grep -v grep | grep "$(echo -e "${my_cli##$prefix}" | cut -d" " -f1-4)")
+	#[[ -n $cmd_ps ]] && logger_trace "$cmd ps: $cmd_ps"
+	#[[ -z $cmd_ps ]] && logger_trace "$cmd ps: $(ps aux | grep $USER | grep -v grep | grep $pid)"
 	local PIDS_ARR=()
 	PIDS_ARR=("${PIDS_ARR[@]}" "$pid")
-	# wait until command line process finish and reinit pid array
+	## wait until command line process finish and reinit pid array
 	for p in "${PIDS_ARR[@]}"; do
 		local pid_list_failed_msg="[$my_tag] Failed getting process status for process $p."
-		logger_trace "[$my_tag] $(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>$CWD/$my_eval_err)"
+		logger_trace "[$my_tag] $(ps aux | grep $USER | gawk -v pid=$p '$2 ~ pid {print $0}' 2>$my_cmd_err)"
 		local rtrn=$?
-		exit_on_error "$CWD/$my_eval_err" "$pid_list_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
+		exit_on_error "$my_cmd_err" "$pid_list_failed_msg" "$rtrn" "$CWD/$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
 	done
-	logger_info "[$my_tag] Wait for all $(echo -e "${my_cli##$prefix}" | cut -d" " -f1) processes to finish before proceeding to next step."
-	waitalluntiltimeout "${PIDS_ARR[@]}" 2>/dev/null
-	if [[ -s $my_cli_err ]]; then
-		logger_warn "[$my_tag] Some messages were thrown to standard error while executing $my_cli . See $my_cli_err for more details."
+	logger_debug "[$my_tag] Wait for all $cmd processes to finish before proceeding to next step."
+	#local waitall_file="$outDir/${cmd}.waitall.$(date '+%Y%m%d%H%M%S').log"
+	#waitalluntiltimeout "${PIDS_ARR[@]}" 2>"$waitall_file"
+	wait $pid
+	local status=$?
+	logger_debug "$cmd pid status: $status"
+	cmd_status_file=${cmd_pid_file%.pid}.exit-status
+	echo $status >$cmd_status_file
+	logger_debug "$cmd pid status: $status saved to $cmd_status_file"
+	if [[ -s $my_cmd_err ]]; then
+		logger_warn "[$my_tag] Some messages were thrown to standard error while executing $my_cli . See $my_cmd_err for more details."
 	fi
-	logger_info "[$my_tag] All $(echo -e "${my_cli##$prefix}" | cut -d" " -f1) processes finished."
-	PIDS_ARR=()
+	logger_debug "[$my_tag] All $cmd processes finished."
+    PIDS_ARR=()
+
+#	last_line=$(tail -1 "$waitall_file" | grep " $pid exited with non-zero exit status")
+#	if [[ -n last_line=$(tail -1 "$waitall_file" | grep " $pid exited with non-zero exit status") ]]; then
+#		pid_status_error_msg="[$my_tag] $last_line"
+#		logger_warn "$pid_status_error_msg"	
+#	else
+#		logger_debug "[$my_tag] $(tail -1 "$waitall_file" | grep " $pid exited with zero exit status")"
+#	fi
+	return $status
 }
 
 
