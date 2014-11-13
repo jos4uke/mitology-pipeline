@@ -619,7 +619,8 @@ declare -r interleaving_output=$(toupper ${NAMESPACE}_interleaving_output)
 declare -r khmer_interleave_reads=$(toupper ${NAMESPACE}_paths)_khmer_interleave_reads
 R1_input="${interleaving_input}[R1]"
 R2_input="${interleaving_input}[R2]"
-interleaving_cli="${!khmer_interleave_reads} ${!R1_input} ${!R2_input} >${!interleaving_output["filename"]} 2>${INTERLEAVING_ERROR} &"
+interleaving_cli="${!khmer_interleave_reads} ${!R1_input} ${!R2_input} >${!interleaving_output["filename"]}"
+#interleaving_cli+=" 2>${INTERLEAVING_ERROR}"
 
 # check if interleaving subdir exists else create
 # set interleaving step input vars (no need to check seq file: already done in sample checking block)
@@ -628,7 +629,6 @@ interleaving_cli="${!khmer_interleave_reads} ${!R1_input} ${!R2_input} >${!inter
 logger_info "Creating $INTERLEAVING_SUBDIR_PATH directory ..."
 if [[ -d $INTERLEAVING_SUBDIR_PATH ]]; then
 	logger_debug "OK $INTERLEAVING_SUBDIR_PATH directory already exists. Will check for already existing output files."
-
 	# check for existing output files
 	if [[ -s ${!interleaving_output["filename"]} ]]; then
 		# skip step
@@ -637,7 +637,7 @@ if [[ -d $INTERLEAVING_SUBDIR_PATH ]]; then
 	else
 		# run step
 		logger_info "[$INTERLEAVING_SUBDIR] Will run interleaving step ..."
-		run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+		run_cli -c "$interleaving_cli" -t "$INTERLEAVING_SUBDIR" -e "$INTERLEAVING_ERROR" -d
 	fi
 else
 	# create subdir
