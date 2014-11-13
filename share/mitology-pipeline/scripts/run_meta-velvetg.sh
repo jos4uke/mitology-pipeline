@@ -509,15 +509,15 @@ case $SKIP_PA in
         fi
 
 		# velvetg
-		logger_debug "[$VG] Expected velvetg output files already exist: "
-        logger_debug "[$VG] - ${!VG_Graph2}"
-        logger_debug "[$VG] - ${!VG_stats}"
+		logger_debug "[$PA] Expected velvetg output files already exist: "
+        logger_debug "[$PA] - ${!VG_Graph2}"
+        logger_debug "[$PA] - ${!VG_stats}"
         if [[ $(realpath $OUTPUT_DIR) != $(realpath $PA_DIR) ]]; then
-            logger_debug "[$VG] Will link files to the current output directory"
+            logger_debug "[$PA] Will link files to the current output directory"
             ln -s $(realpath ${!VG_Graph2}) ${OUTPUT_DIR}/${velvetg_output[Graph2]}
             ln -s $(realpath ${!VG_stats}) ${OUTPUT_DIR}/${velvetg_output[stats]}
-            [[ -e ${OUTPUT_DIR}/${velvetg_output[Graph2]} ]] && logger_debug "[$VG] ${velvetg_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[Graph2]} not symlinked"
-            [[ -e ${OUTPUT_DIR}/${velvetg_output[stats]} ]] && logger_debug "[$VG] ${velvetgh_output[Graph2]} symlinked" || logger_warn "[$VG] ${velvetg_output[stats]} not symlinked"
+            [[ -e ${OUTPUT_DIR}/${velvetg_output[Graph2]} ]] && logger_debug "[$PA] ${velvetg_output[Graph2]} symlinked" || logger_warn "[$PA] ${velvetg_output[Graph2]} not symlinked"
+            [[ -e ${OUTPUT_DIR}/${velvetg_output[stats]} ]] && logger_debug "[$PA] ${velvetgh_output[Graph2]} symlinked" || logger_warn "[$PA] ${velvetg_output[stats]} not symlinked"
         fi
 		;;
 	(false)
