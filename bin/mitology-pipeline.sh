@@ -683,7 +683,8 @@ hashcount_opts="${khmer_load_into_counting_opts[@]}"
 logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $hashcount_opts"
 # build cli
 declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_into_counting
-hashcount_cli="${!khmer_load_into_counting} $hashcount_opts ${!hashcount_output['output_countingtable_filename']} ${!hashcount_input['input_sequence_filename']} 2>${HASHCOUNT_ERROR} | logger_debug &"
+hashcount_cli="${!khmer_load_into_counting} $hashcount_opts ${!hashcount_output['output_countingtable_filename']} ${!hashcount_input['input_sequence_filename']}i"
+#hashcount_cli+=" 2>${HASHCOUNT_ERROR} | logger_debug"
 
 # check if hashcount subdir exists else create
 # set hashcount step input vars (see previous LINK step)
@@ -701,7 +702,7 @@ if [[ -d $HASHCOUNT_SUBDIR_PATH ]]; then
 	else
 		# run step
 		logger_info "[$HASHCOUNT_SUBDIR] Will run hashcount step ... "
-		run_cli -c "$hashcount_cli" -t "$HASHCOUNT_SUBDIR" -e "$HASHCOUNT_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+		run_cli -c "$hashcount_cli" -t "$HASHCOUNT_SUBDIR" -e "$HASHCOUNT_ERROR" -d
 	fi
 else
 	# create subdir
@@ -713,7 +714,7 @@ else
 	logger_debug "[$KMER_FILTER_ABUND_OUTDIR] OK $HASHCOUNT_SUBDIR_PATH directory was created successfully. Will output hashcount output files in this directory."
 	# run step
 	logger_info "[$HASHCOUNT_SUBDIR] Will run hashcount step ... "
-	run_cli -c "$hashcount_cli" -t "$HASHCOUNT_SUBDIR" -e "$HASHCOUNT_ERROR" -E "$KMER_FILTER_ABUND_ERROR"
+	run_cli -c "$hashcount_cli" -t "$HASHCOUNT_SUBDIR" -e "$HASHCOUNT_ERROR" -d
 
 	### check for potential errors at start
 	# khmer version 1.1 / screed version 0.7
