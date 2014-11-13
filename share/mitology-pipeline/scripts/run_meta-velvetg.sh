@@ -691,15 +691,10 @@ case $SKIP_MV in
 		## run cli
 		run_cli -c "$meta_velvetg_cli" -t "$MV" -e "$MV_ERROR" -d
 
-		## symlink ### TODO ###
+		## symlink
 		[[ -s ${!MV_contigs} ]] && ln -s $(basename ${!MV_contigs}) $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa || logger_warn "[$MV] Meta-velvetg contigs fasta file, ${!MV_contigs}, does not exist. Cannot symlink ${!MV_contigs} to $OUTPUT_DIR/${SAMPLE_ID}.contigs.fa"
 		;;
 esac
-
-
-
-
-
 
 
 #=====
