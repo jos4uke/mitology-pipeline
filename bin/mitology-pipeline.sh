@@ -1336,6 +1336,19 @@ else
     logger_debug "[$ALIGNMENTS_OUTDIR] OK $ALIGNMENTS_OUTDIR directory was created successfully. Will output all output files in this directory."
 fi
 
+### Enable the alignments debug logger
+ALIGNMENTS_DEBUGF=${ALIGNMENTS_OUTDIR}_debug.log
+logger_addAppender alignDebugF
+appender_setType alignDebugF FileAppender
+appender_file_setFile alignDebugF $(realpath $OUTPUT_DIR)/$ALIGNMENTS_OUTDIR/$ALIGNMENTS_DEBUGF
+appender_setLevel alignDebugF DEBUG
+appender_setLayout alignDebugF PatternLayout
+appender_setPattern alignDebugF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions alignDebugF
+appender_exists alignDebugF && logger_info "[$ALIGNMENTS_OUTDIR] Debugging infos on alignments will be output to $OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$ALIGNMENTS_DEBUGF file." || logger_warn "The alignDebugF debugger file appender was not enabled. Maybe a log4sh error occured."
+### error handling
+ALIGNMENTS_ERROR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/${ALIGNMENTS_DEBUGF}.err
+
 
 #=====
 # END
