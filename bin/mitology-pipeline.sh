@@ -1411,6 +1411,26 @@ cd $WORKING_DIR
 run_nucmer "$REF_PT" "$(realpath ${!assembler_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
 echo "PWD: $(pwd)"
 cd $WORKING_DIR
+
+# vs SCAFFOLDING
+#scaffolder_contigs=$(find $OUTPUT_DIR/$ASSEMBLY_OUTDIR/*/scaff* -iname meta-velvetg.contigs.fa)
+scaffolder_contigs="${assembly_output}[scaffolder_contigs]"
+sample_id=${sample_id/scaffolding_no/scaffolding_yes}
+#sample_id+="_scaffolding_yes" 
+sample_dir=$(dirname ${!scaffolder_contigs##$OUTPUT_DIR/$ASSEMBLY_OUTDIR/})
+NUCMER_OUTDIR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$NUCMER/$sample_dir
+
+mkdir -p $NUCMER_OUTDIR 
+
+## mito
+run_nucmer "$REF_MT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_mito"
+echo "PWD: $(pwd)"
+cd $WORKING_DIR
+
+## chloro
+run_nucmer "$REF_PT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
+echo "PWD: $(pwd)"
+cd $WORKING_DIR
 #=====
 # END
 #=====
