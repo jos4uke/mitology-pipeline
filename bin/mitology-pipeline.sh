@@ -1382,6 +1382,35 @@ function run_nucmer() {
     cd $(realpath $PWD)
 }
 
+# vs CONTIGING
+### test
+#logger_debug "[$NUCMER] contiging dir: $CONTIGING_OUTDIR"
+#assemblerContigsRef="${assembly_output}[assembler_contigs]"
+#logger_info "[$NUCMER] assembler contigs file: ${!assemblerContigsRef}"
+#assembler_contigs="${!assemblerContigsRef}"
+#sample_dir="${assembler_contigs##${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/}"
+#logger_debug "[$NUCMER] sample dir: $sample_dir"
+#NUCMER_OUTDIR="$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/"
+#exit 1
+### end test
+
+#assembler_contigs=$(find $OUTPUT_DIR/$ASSEMBLY_OUTDIR/*/contiging* -iname meta-velvetg.contigs.fa)
+assembler_contigs="${assembly_output}[assembler_contigs]"
+sample_id+="_scaffolding_no"
+sample_dir=$(dirname ${!assembler_contigs##$OUTPUT_DIR/$ASSEMBLY_OUTDIR/})
+NUCMER_OUTDIR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$NUCMER/$sample_dir
+
+mkdir -p $NUCMER_OUTDIR
+
+## mito
+run_nucmer "$REF_MT" "$(realpath ${!assembler_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_mito" 
+echo "PWD: $(pwd)"
+cd $WORKING_DIR
+
+## chloro
+run_nucmer "$REF_PT" "$(realpath ${!assembler_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
+echo "PWD: $(pwd)"
+cd $WORKING_DIR
 #=====
 # END
 #=====
