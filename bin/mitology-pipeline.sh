@@ -1185,21 +1185,24 @@ case "${!ASSEMBLER}" in
 			logger_debug "[$contigs_by] pid, ${pid}, exit status: $rtrn"
 			run_MV_failed_msg="[$contigs_by] Meta-velvetg script returns a non-zero status exit code. See $OUTPUT_DIR/$LOG_DIR/$DEBUGFILE file for more details."
 			exit_on_error "$ERROR_TMP" "$run_MV_failed_msg" "$rtrn" "$OUTPUT_DIR/$LOG_DIR/$DEBUGFILE" "$SESSION_TAG" "$EMAIL"
-			### TODO ###
-			# see previous checkings
 		fi
 		;;
 	# put here other assemblers
 esac
 
 
-
-### TODO ###
-
 #
 # LINKS step
 #
 # case assembler/scaffolder combinations
+# add contiging output to assembly output hash
+#eval "declare -A $(toupper ${NAMESPACE}_assembly_output)"
+#assembly_output=$(toupper ${NAMESPACE}_assembly_output)
+assembler_contigs="${assembler_output}[contigs]"
+eval "${assembly_output}=( [assembler_contigs]=${!assembler_contigs} )"
+assembly_assembler_contigs="${assembly_output}[assembler_contigs]"
+logger_debug "[$contigs_by] Add contiging output to assembly output hash"
+logger_debug "[$contigs_by] - ${!assembly_assembler_contigs} => ${assembly_output} hash"
 
 
 # 
