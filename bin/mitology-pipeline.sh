@@ -1434,6 +1434,47 @@ cd $WORKING_DIR
 
 ### close alignments debug logger
 appender_exists alignDebugF && appender_close alignDebugF
+
+
+#===============
+# 04.Statistics
+#===============
+
+# STEPS
+## QUAST
+## AMOS/ASTATS
+## COMPASS
+
+#
+# QUAST
+#
+
+### a first draft using scaffolder contigs with chloro/mito reference genomes and genes annotation
+QUAST="quast"
+REF_MC_genomes=cvi_k20_C29.abundfilt_k71.assembly/02.Assembly/cvi_k20_C29.abundfilt.pe_k71.assembly/scaffolding_by_meta-velvetg/-amos_file_yes-cov_cutoff_5-exp_covs_280_31-ins_length_440-scaffolding_yes/REF/MC.fasta
+REF_MC_genes=${REF_MC_genomes%/MC.fasta}/MC_Genes.gff
+QUAST_OUTDIR=$OUTPUT_DIR/04.Statistics/$QUAST/$sample_dir
+mkdir -p $QUAST_OUTDIR
+/usr/local/src/quast-2.3/quast.py -o $QUAST_OUTDIR -R $REF_MC_genomes -G $REF_MC_genes -T 12 -M 150 --debug $(realpath ${!scaffolder_contigs})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #=====
 # END
 #=====
