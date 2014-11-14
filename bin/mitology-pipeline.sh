@@ -1063,9 +1063,10 @@ filterabund_pe="${assembly_input}[pe]"
 filterabund_se="${assembly_input}[se]"
 [[ -s ${!filterabund_se} ]] && sample_id="$(basename ${!filterabund_pe}).se" || sample_id="$(basename ${!filterabund_pe})"
 sample_assemblies_outdir="${sample_id}.assemblies"
+sample_id+=".assembly_meta-velvetg_k${!assembly_k}"
 # define assembly
-declare -r assembly_output=$(toupper ${NAMESPACE}_assembly_output) 
-eval "${assembly_output}=( )"
+eval "declare -A $(toupper ${NAMESPACE}_assembly_output)" 
+assembly_output=$(toupper ${NAMESPACE}_assembly_output)
 
 #
 # CONTIGING
