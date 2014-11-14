@@ -1312,9 +1312,30 @@ logger_debug "[$scaffolds_by] - ${!assembly_scaffolding_contigs} => ${assembly_o
 appender_exists assemblyDebugF && appender_close assemblyDebugF
 
 
+#
+# 03.ALIGNMENTS: NUCMER and bwa
+#
 
-### close assembly debug logger
-appender_exists assemblyDebugF && appender_close assemblyDebugF
+# STEPS
+## NUCMER
+## BWA
+
+#
+# Create Alignments output directory
+#
+ALIGNMENTS_OUTDIR="03.Alignments"
+logger_info "Creating $ALIGNMENTS_OUTDIR directory ..."
+if [[ -d $OUTPUT_DIR/$ALIGNMENTS_OUTDIR ]]; then
+    logger_debug "OK $ALIGNMENTS_OUTDIR directory already exists. Will output all alignments output files in this directory."
+else
+    mkdir $OUTPUT_DIR/$ALIGNMENTS_OUTDIR 2>$ERROR_TMP
+    rtrn=$?
+    out_dir_failed_msg="[$ALIGNMENTS_OUTDIR] Failed. Alignments output directory, $ALIGNMENTS_OUTDIR, was not created."
+    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+    logger_debug "[$ALIGNMENTS_OUTDIR] OK $ALIGNMENTS_OUTDIR directory was created successfully. Will output all output files in this directory."
+fi
+
 
 #=====
 # END
