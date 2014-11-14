@@ -1308,6 +1308,8 @@ logger_debug "[$scaffolds_by] Add scaffolding output to assembly output hash"
 logger_debug "[$scaffolds_by] - ${!assembly_scaffolding_contigs} => ${assembly_output} hash"
 
 
+### close assembly debug logger
+appender_exists assemblyDebugF && appender_close assemblyDebugF
 
 
 
