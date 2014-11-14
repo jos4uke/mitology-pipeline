@@ -1297,6 +1297,15 @@ case "${!SCAFFOLDER}" in
 esac
 
 
+#
+# LINKS step
+#
+# add scaffolding output to assembly output hash
+scaffolder_contigs="${scaffolder_output}[contigs]"
+eval "${assembly_output}+=( [scaffolder_contigs]=${!scaffolder_contigs} )"
+assembly_scaffolding_contigs="${assembly_output}[scaffolder_contigs]"
+logger_debug "[$scaffolds_by] Add scaffolding output to assembly output hash"
+logger_debug "[$scaffolds_by] - ${!assembly_scaffolding_contigs} => ${assembly_output} hash"
 
 
 
