@@ -1431,6 +1431,9 @@ cd $WORKING_DIR
 run_nucmer "$REF_PT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
 echo "PWD: $(pwd)"
 cd $WORKING_DIR
+
+### close alignments debug logger
+appender_exists alignDebugF && appender_close alignDebugF
 #=====
 # END
 #=====
