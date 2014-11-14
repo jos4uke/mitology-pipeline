@@ -1349,6 +1349,38 @@ appender_exists alignDebugF && logger_info "[$ALIGNMENTS_OUTDIR] Debugging infos
 ### error handling
 ALIGNMENTS_ERROR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/${ALIGNMENTS_DEBUGF}.err
 
+#
+# LINKS step
+#
+# cf assembly_output hash for contigs
+# cf sample_id for naming files
+# ref genomes ### TODO: move to the config file
+REF_MT="/data/SEQUENCES/GENOME/Ath-Col0-tair10-chrM/Ath-Col0-tair10-chrM.fas"
+REF_PT="/data/SEQUENCES/GENOME/Ath-Col0-tair10-chrC/Ath-Col0-tair10-chrC.fas"
+
+#
+# NUCMER
+#
+logger_info "[$ALIGNMENTS_OUTDIR] Align contigs against reference genomes ... "
+
+NUCMER="nucmer"
+
+function run_nucmer() {
+    local REF=$1
+    local SEQ=$2
+    local OUTDIR=$3
+    local TITLE=$4
+    local PWD=$(pwd)
+    echo "curDir: $PWD"
+	cd $(realpath $OUTDIR)
+    nucmer --prefix=$TITLE $REF $SEQ
+    show-coords ${TITLE}.delta > ${TITLE}.coords
+    mummerplot -l ${TITLE}.delta --small --postscript --title="$TITLE"
+    show-tiling -c ${TITLE}.delta > ${TITLE}.tiling
+    mv "out.ps" $TITLE.ps
+    ps2pdf $TITLE.ps $TITLE.pdf
+    cd $(realpath $PWD)
+}
 
 #=====
 # END
