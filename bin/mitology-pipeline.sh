@@ -1420,9 +1420,11 @@ ALIGNMENTS_ERROR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/${ALIGNMENTS_DEBUGF}.err
 #
 # NUCMER
 #
-logger_info "[$ALIGNMENTS_OUTDIR] Align contigs against reference genomes ... "
-
 NUCMER="nucmer"
+logger_info "[$ALIGNMENTS_OUTDIR] Align contigs against reference genomes using $NUCMER ... "
+NUCMER_OUTDIR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$NUCMER
+logger_info "[$ALIGNMENTS_OUTDIR] Will output $NUCMER alignment results into directory $NUCMER_OUTDIR ... "
+createDir -n "$NUCMER_OUTDIR" -t "$NUCMER" -e "$ERROR_TMP" -d
 
 function run_nucmer() {
     local REF=$1
