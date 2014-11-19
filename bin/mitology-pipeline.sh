@@ -1482,24 +1482,42 @@ done
 #cd $WORKING_DIR
 
 # vs SCAFFOLDING
-#scaffolder_contigs=$(find $OUTPUT_DIR/$ASSEMBLY_OUTDIR/*/scaff* -iname meta-velvetg.contigs.fa)
 scaffolder_contigs="${assembly_output}[scaffolder_contigs]"
 sample_id=${sample_id/scaffolding_no/scaffolding_yes}
-#sample_id+="_scaffolding_yes" 
 sample_dir=$(dirname ${!scaffolder_contigs##$OUTPUT_DIR/$ASSEMBLY_OUTDIR/})
-NUCMER_OUTDIR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$NUCMER/$sample_dir
+logger_info "$[${NUCMER}_scaffolding] run $NUCMER on ${!scaffolder_contigs} ... "
+NUCMER_SCAFFOLDING_OUTDIR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$NUCMER/$sample_dir
+createDir -n "$NUCMER_SCAFFOLDING_OUTDIR" -t "$NUCMER_SCAFFOLDING_OUTDIR" -e "$ERROR_TMP" -d
 
-mkdir -p $NUCMER_OUTDIR 
+for organite in mito chloro; do
+	case $organite in
+        mito)
+            REF_GENOME=${ga_mito_ref_path}
+            ;;
+        chloro)
+            REF_GENOME=${ga_chloro_ref_path}
+            ;;
+    esac
+	NUCMER_SCAFFOLDING_ORGANITE=$NUCMER_SCAFFOLDING_OUTDIR/$organite
+	NUCMER_SCAFFOLDING_ORGANITE_ERROR=$NUCMER_SCAFFOLDING_ORGANITE/${NUCMER}_${organite}.err
+	createDir -n "$NUCMER_SCAFFOLDING_ORGANITE" -t "${NUCMER}_$organite" -e "$ERROR_TMP" -d
+    run_nucmer "$REF_GENOME" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_SCAFFOLDING_ORGANITE)" "${sample_id}_${organite}" 2>$NUCMER_SCAFFOLDING_ORGANITE_ERROR
+	rtrn=$?
+    nucmer_failed_msg="[${NUCMER}_$organite] Failed. Errors occured while running $NUCMER on ${!scaffolder_contigs} against $organite genome"
+    exit_on_error "$NUCMER_SCAFFOLDING_ORGANITE_ERROR" "$nucmer_failed_msg" "$rtrn" "$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/$ALIGNMENTS_DEBUGF" $SESSION_TAG $EMAIL
+    logger_debug "[${NUCMER}_$organite] PWD: $(pwd)"
+    cd $WORKING_DIR	
+done
 
 ## mito
-run_nucmer "$REF_MT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_mito"
-echo "PWD: $(pwd)"
-cd $WORKING_DIR
+#run_nucmer "$REF_MT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_mito"
+#echo "PWD: $(pwd)"
+#cd $WORKING_DIR
 
 ## chloro
-run_nucmer "$REF_PT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
-echo "PWD: $(pwd)"
-cd $WORKING_DIR
+#run_nucmer "$REF_PT" "$(realpath ${!scaffolder_contigs})" "$(realpath $NUCMER_OUTDIR)" "${sample_id}_chloro"
+#echo "PWD: $(pwd)"
+#cd $WORKING_DIR
 
 ### close alignments debug logger
 appender_exists alignDebugF && appender_close alignDebugF
