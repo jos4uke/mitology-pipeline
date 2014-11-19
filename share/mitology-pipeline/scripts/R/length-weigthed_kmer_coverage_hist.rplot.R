@@ -95,7 +95,7 @@ if (opt$help) {
 if (length(arguments$args) != 1) {
     cat(paste("author:  Joseph Tran <Joseph.Tran@versailles.inra.fr>\n\nversion: ", version, "\n\n"))
     print_help(parser)
-    cat("notes:\n\t1. Copyright (c) 2012 by Joseph Tran. This work is made available under the terms of the Creative Commons Attribution-ShareAlike 3.0 license, http://creativecommons.org/licenses/by-sa/3.0/.\n\n")
+    cat("notes:\n\t1. Copyright (c) 2014 by Joseph Tran. This work is made available under the terms of the Creative Commons Attribution-ShareAlike 3.0 license, http://creativecommons.org/licenses/by-sa/3.0/.\n\n")
     stop("Incorrect number of required positional arguments\n\n")
 } else {
     file <- arguments$args
