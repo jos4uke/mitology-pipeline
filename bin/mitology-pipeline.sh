@@ -1529,8 +1529,28 @@ appender_exists alignDebugF && appender_close alignDebugF
 
 # STEPS
 ## QUAST
-## AMOS/ASTATS
-## COMPASS
+## AMOS/ASTATS ### TODO ###
+## COMPASS ### TODO ###
+
+#
+# Create Statistics output directory
+# 
+STATS_OUTDIR="04.Statistics"
+logger_info "Creating $STATS_OUTDIR directory ..."
+createDir -n "$STATS_OUTDIR" -t "$STATS_OUTDIR" -e "$ERROR_TMP" -d
+
+### Enable the alignments debug logger
+STATS_DEBUGF=${STATS_OUTDIR}_debug.log
+logger_addAppender statsDebugF
+appender_setType statsDebugF FileAppender
+appender_file_setFile statsDebugF $(realpath $OUTPUT_DIR)/$STATS_OUTDIR/$STATS_DEBUGF
+appender_setLevel statsDebugF DEBUG
+appender_setLayout statsDebugF PatternLayout
+appender_setPattern statsDebugF '%d{HH:mm:ss,SSS} %-4rs [%F:%-5p] %t - %m'
+appender_activateOptions statsDebugF
+appender_exists statsDebugF && logger_info "[$STATS_OUTDIR] Debugging infos on alignments will be output to $OUTPUT_DIR/$STATS_OUTDIR/$STATS_DEBUGF file." || logger_warn "The statsDebugF debugger file appender was not enabled. Maybe a log4sh error occured."
+### error handling
+STATS_ERROR=$OUTPUT_DIR/$STATS_OUTDIR/${STATS_DEBUGF}.err
 
 #
 # QUAST
@@ -1552,6 +1572,8 @@ mkdir -p $QUAST_OUTDIR
 
 
 
+### close stats debugger file
+appender_exists statsDebugF && appender_close statsDebugF
 
 
 
