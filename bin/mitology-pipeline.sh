@@ -1590,7 +1590,27 @@ for organite in mito chloro; do
 	run_cli -c "$quast_cli" -t "${QUAST}_$organite" -e "$QUAST_ERROR" -d
 done
 
+### SCAFFOLDING
+sample_dir=$(dirname ${!scaffolder_contigs##$OUTPUT_DIR/$ASSEMBLY_OUTDIR/})
+logger_info "$[${QUAST}_scaffolding] run $QUAST on ${!scaffolder_contigs} ... "
+for organite in mito chloro; do
+    QUAST_SCAFFOLDING_OUTDIR=$QUAST_OUTDIR/$sample_dir/$organite/${quast_opts_sorted_cat}
+    QUAST_ERROR=$QUAST_SCAFFOLDING_OUTDIR/${QUAST}_${organite}.err
+    case $organite in
+        chloro)
+            REF_GENOME=${ga_chloro_ref_path}
+            REF_GFF=${ga_chloro_gff_ref_path}
+            ;;
+        mito)
+            REF_GENOME=${ga_mito_ref_path}
+            REF_GFF=${ga_mito_gff_ref_path}
+            ;;
+    esac
+    createDir -n "$QUAST_SCAFFOLDING_OUTDIR" -t "${QUAST}_$organite" -e "$ERROR_TMP" -d
 
+    quast_cli="${!quast_path} -o $QUAST_SCAFFOLDING_OUTDIR -R $REF_GENOME -G $REF_GFF ${quast_opts[@]} $(realpath ${!scaffolder_contigs})"
+    run_cli -c "$quast_cli" -t "${QUAST}_$organite" -e "$QUAST_ERROR" -d
+done
 
 ### close stats debugger file
 appender_exists statsDebugF && appender_close statsDebugF
