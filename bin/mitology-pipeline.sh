@@ -450,7 +450,7 @@ fi
 logger_debug "[Genome index path] ${genome_index_path}=${!genome_index_path}"
 
 #### reference
-declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias )_ref
+declare -r ga_ref=$(toupper ${NAMESPACE}_genome_alias)_ref
 if [[ -z ${!ga_ref} ]]; then
     logger_fatal "An error occured while setting genome alias variable for reference genome."
     exit 1
@@ -559,7 +559,7 @@ logger_info "[Checking sample] Sample R2 seq file, ${!current_sample_seq_R2}, ex
 KMER_FILTER_ABUND_OUTDIR="01.K-mer_filter_abund"
 logger_info "Creating $KMER_FILTER_ABUND_OUTDIR directory ..." 
 if [[ -d $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR ]]; then
-    logger_debug"OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
+    logger_debug "OK $KMER_FILTER_ABUND_OUTDIR directory already exists. Will output all k-mer abundance filtering output files in this directory."
 else
     mkdir $OUTPUT_DIR/$KMER_FILTER_ABUND_OUTDIR 2>$ERROR_TMP
     rtrn=$?
@@ -683,7 +683,7 @@ hashcount_opts="${khmer_load_into_counting_opts[@]}"
 logger_debug "[$KMER_FILTER_ABUND_OUTDIR] khmer_load_into_counting options: $hashcount_opts"
 # build cli
 declare -r khmer_load_into_counting=$(toupper ${NAMESPACE}_paths)_khmer_load_into_counting
-hashcount_cli="${!khmer_load_into_counting} $hashcount_opts ${!hashcount_output['output_countingtable_filename']} ${!hashcount_input['input_sequence_filename']}i"
+hashcount_cli="${!khmer_load_into_counting} $hashcount_opts ${!hashcount_output['output_countingtable_filename']} ${!hashcount_input['input_sequence_filename']}"
 #hashcount_cli+=" 2>${HASHCOUNT_ERROR} | logger_debug"
 
 # check if hashcount subdir exists else create
