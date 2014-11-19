@@ -107,17 +107,19 @@ run_cli()
     # logging calls resolution depend on parent script which is supposed to load log4sh
     logger_debug "[$my_tag] $my_cli"
 
-    #if [[ "$my_DEBUG" == true ]]; then
-    #   $my_cli 2>$CWD/$my_cmd_err &
-    #   pid=$!
-    #else
-	($my_cli 2>$my_cmd_err & echo $! >&3) 3>$cmd_pid_file | logger_debug 
-	#pid=$!
-    #fi
+    ##if [[ "$my_DEBUG" == true ]]; then
+    ##   $my_cli 2>$CWD/$my_cmd_err &
+    ##   pid=$!
+    ##else
+	#($my_cli 2>$my_cmd_err & echo $! >&3) 3>$cmd_pid_file | logger_debug 
+	eval "$my_cli 2>$my_cmd_err &"
+	pid=$!
+	##pid=$!
+    ##fi
 
-	pid=$(cat $cmd_pid_file)
+	#pid=$(cat $cmd_pid_file)
     logger_debug "$cmd pid: $pid"
-    #echo $pid >$cmd_pid_file
+    echo $pid >$cmd_pid_file
     logger_trace "$cmd pid: $pid saved to file $cmd_pid_file"
 
 	# GLOBALS: $OUTPUT_DIR, $LOG_DIR, $DEBUGFILE, $SESSION_TAG, $EMAIL, $PIDS_ARR
