@@ -1555,17 +1555,15 @@ STATS_ERROR=$OUTPUT_DIR/$STATS_OUTDIR/${STATS_DEBUGF}.err
 #
 # QUAST
 #
-
-### a first draft using scaffolder contigs with chloro/mito reference genomes and genes annotation
 QUAST="quast"
-REF_MC_genomes=cvi_k20_C29.abundfilt_k71.assembly/02.Assembly/cvi_k20_C29.abundfilt.pe_k71.assembly/scaffolding_by_meta-velvetg/-amos_file_yes-cov_cutoff_5-exp_covs_280_31-ins_length_440-scaffolding_yes/REF/MC.fasta
-REF_MC_genes=${REF_MC_genomes%/MC.fasta}/MC_Genes.gff
-QUAST_OUTDIR=$OUTPUT_DIR/04.Statistics/$QUAST/$sample_dir
-mkdir -p $QUAST_OUTDIR
-/usr/local/src/quast-2.3/quast.py -o $QUAST_OUTDIR -R $REF_MC_genomes -G $REF_MC_genes -T 12 -M 150 --debug $(realpath ${!scaffolder_contigs})
+logger_info "[$STATS_OUTDIR] Will compute assemblies statistics using $QUAST ... "
 
-
-
+## build quast cli options 
+quast_path=$(toupper ${NAMESPACE}_paths)_quast
+quast_opts=($(buildCommandLineOptions "quast" "$NAMESPACE" "remove_equal" 2>$ERROR_TMP))
+quast_opts_sorted=($(shortenAndSortOptions "${quast_opts[@]}" 2>$ERROR_TMP))
+quast_opts_sorted_cat="opts"$(echo "${quast_opts_sorted[@]}" | sed -e 's/[ ]/_/g')
+QUAST_OUTDIR=$OUTPUT_DIR/04.Statistics/$QUAST
 
 
 
