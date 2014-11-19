@@ -1565,6 +1565,8 @@ quast_opts_sorted=($(shortenAndSortOptions "${quast_opts[@]}" 2>$ERROR_TMP))
 quast_opts_sorted_cat="opts"$(echo "${quast_opts_sorted[@]}" | sed -e 's/[ ]/_/g')
 QUAST_OUTDIR=$OUTPUT_DIR/04.Statistics/$QUAST
 
+## create quast output directory
+createDir -n "$QUAST_OUTDIR" -t "$QUAST_OUTDIR" -e "$ERROR_TMP" -d 
 
 
 
