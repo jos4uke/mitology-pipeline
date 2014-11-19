@@ -457,6 +457,63 @@ if [[ -z ${!ga_ref} ]]; then
 fi
 logger_debug "[Genome alias] ${ga_ref}=${!ga_ref}"
 
+##### mito
+declare -r ga_mito_ref=$(toupper ${NAMESPACE}_genome_alias)_ref_mito
+if [[ -z ${!ga_mito_ref} ]]; then
+    logger_fatal "An error occured while setting genome alias variable for mitochondria reference genome."
+    exit 1
+fi
+logger_debug "[Genome alias] ${ga_mito_ref}=${!ga_mito_ref}"
+ga_mito_ref_path=${!genome_base_path}/${!ga_mito_ref}/${!ga_mito_ref}.fas
+if [[ ! -s ${ga_mito_ref_path} ]]; then
+    logger_fatal "Reference genome fasta sequence for mitochondria does not exist or is empty."
+	logger_fatal "Please check for given sequence path: ${ga_mito_ref_path}"
+    exit 1
+fi
+logger_info "[Genome alias] mito_ref_path=${ga_mito_ref_path}"
+ga_mito_gff_ref=$(toupper ${NAMESPACE}_genome_alias)_ref_mito_gff
+if [[ -z ${!ga_mito_gff_ref} ]]; then
+    logger_fatal "An error occured while setting gff genes alias variable for mitochondria reference genes gff."
+    exit 1
+fi
+logger_info "[Genome alias] ${ga_mito_gff_ref}=${!ga_mito_gff_ref}"
+ga_mito_gff_ref_path=${!genome_base_path}/${!ga_mito_ref}/${!ga_mito_gff_ref}
+if [[ ! -s ${ga_mito_gff_ref_path} ]]; then
+    logger_fatal "Reference gff genes for mitochondria does not exist or is empty."
+    logger_fatal "Please check for given gff genes path: ${ga_mito_gff_ref_path}"
+    exit 1
+fi
+logger_info "[Genome alias] mito_gff_ref_path=${ga_mito_gff_ref_path}"
+
+##### chloro
+declare -r ga_chloro_ref=$(toupper ${NAMESPACE}_genome_alias)_ref_chloro
+if [[ -z ${!ga_chloro_ref} ]]; then
+    logger_fatal "An error occured while setting genome alias variable for chloroplast reference genome."
+    exit 1
+fi
+logger_debug "[Genome alias] ${ga_chloro_ref}=${!ga_chloro_ref}"
+ga_chloro_ref_path="${!genome_base_path}/${!ga_chloro_ref}/${!ga_chloro_ref}.fas"
+if [[ ! -s ${ga_chloro_ref_path} ]]; then
+    logger_fatal "Reference genome fasta sequence for chloroplast does not exist or is empty."
+    logger_fatal "Please check for given sequence path: ${ga_chloro_ref_path}"
+    exit 1
+fi
+logger_info "[Genome alias] chloro_ref_path=${ga_chloro_ref_path}"
+ga_chloro_gff_ref=$(toupper ${NAMESPACE}_genome_alias)_ref_chloro_gff
+if [[ -z ${!ga_chloro_gff_ref} ]]; then
+    logger_fatal "An error occured while setting gff genes alias variable for chloroplast reference genes gff."
+    exit 1
+fi
+logger_info "[Genome alias] ${ga_chloro_gff_ref}=${!ga_chloro_gff_ref}"
+ga_chloro_gff_ref_path=${!genome_base_path}/${!ga_chloro_ref}/${!ga_chloro_gff_ref}
+if [[ ! -s ${ga_chloro_gff_ref_path} ]]; then
+    logger_fatal "Reference gff genes for chloroplast does not exist or is empty."
+    logger_fatal "Please check for given gff genes path: ${ga_chloro_gff_ref_path}"
+    exit 1
+fi
+logger_info "[Genome alias] chloro_gff_ref_path=${ga_chloro_gff_ref_path}"
+
+
 ### SET GENOME SAMTOOLS INDEX PATH RELATIVE TO CURRENT VERSION/TOOL
 
 declare -r genome_samtools_path=$(toupper ${NAMESPACE}_paths)_SAMTOOLS_INDEXES
