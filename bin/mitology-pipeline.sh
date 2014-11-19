@@ -1431,8 +1431,8 @@ function run_nucmer() {
     local SEQ=$2
     local OUTDIR=$3
     local TITLE=$4
-    local PWD=$(pwd)
-    echo "curDir: $PWD"
+    local CWD=$(pwd)
+    echo "curDir: $CWD"
 	cd $(realpath $OUTDIR)
     nucmer --prefix=$TITLE $REF $SEQ
     show-coords ${TITLE}.delta > ${TITLE}.coords
@@ -1440,7 +1440,7 @@ function run_nucmer() {
     show-tiling -c ${TITLE}.delta > ${TITLE}.tiling
     mv "out.ps" $TITLE.ps
     ps2pdf $TITLE.ps $TITLE.pdf
-    cd $(realpath $PWD)
+    cd $(realpath $CWD)
 }
 
 # vs CONTIGING
