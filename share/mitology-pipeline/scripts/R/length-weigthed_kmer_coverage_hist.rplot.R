@@ -67,7 +67,10 @@ if (is.installed('plotrix'))
 
 ## options and usage
 option_list <- list(
-    make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default %default]")
+    make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default %default]"),
+	make_option(c("-p","--prefix"), action="store", type="character", default="length-weighted_kmer_cov_hist.rplot", metavar="output filename", help="Save the outputs using the given prefix [default %default]"),
+	make_option(c("-m","--xlim_min"), action="store", type="integer", default=0, metavar="xlim minimum value", help="The xlim range minimum value [default %default]"),
+	make_option(c("-M","--xlim_max"), action="store", type="integer", default=500, metavar="xlim minimum value", help="The xlim range maximum value [default %default]")
 )
 parser <- OptionParser(usage = "usage:  %prog [options] file", option_list=option_list)
 arguments <- parse_args(parser, positional_arguments = TRUE, print_help_and_exit=FALSE)
