@@ -32,6 +32,80 @@ shortenAndSortOptions() {
 }
 
 #
+# File utils
+#
+
+#----------------------------------------------------------
+# Function: createDir
+# Purpose: will create a directory given a name
+createDir() {
+	# usage 
+	run_cli_usage() {
+		printf %s "\
+		Usage: createDir [-h|--help] -n|name DIRNAME -t|--tag TAG -e|--err_file ERROR_FILE [-d|--debug] 
+
+		Mandatory:
+		-n|--name DIRNAME               The name of directory to create.
+		-t|--tag TAG                    The tag in TAG to report messages for log
+		-e|--err_file ERROR_FILE        The error file in ERROR_FILE to catch errors while creating the directory
+
+		Options:
+		-d|--debug                      Enable debug logging by piping log4sh logger_debug to the stdout
+		-h|--help                       Displays this message.
+
+		"
+	}
+
+	# opts
+	local my_opts=`getopt -o hn:t:e:d --long help,name:,tag:,err_file:,debug \
+					-n 'createDir' -- "$@"`	
+	
+	if [[ $? != 0 ]]; then run_cli_usage >&2; exit 1; fi
+
+	# eval opts
+	eval set -- "$my_opts"
+
+	while true; do
+		case "$1" in
+			-h | --help ) run_cli_usage >&2; exit 1;;
+			-n | --name ) local my_dirname=$2; shift 2;;
+			-t | --tag ) local my_tag="run_$2"; shift 2;;
+			-e | --err_file ) local my_errfile=$2; shift 2;;
+			-d | --debug ) local my_DEBUG=true; shift ;;
+			-- ) shift; break;;
+			* ) break;;
+		esac
+	done
+	
+	# validate
+	if [[ -z $my_dirname ]]; then logger_fatal "[createDir] The given DIRNAME, ${my_dirname}, must be not null. See Usage with --help option."; exit 1; fi
+	if [[ -z $my_tag ]]; then logger_fatal "[createDir] Tag string, $my_tag, must be not null. See Usage with --help option."; exit 1; fi
+	if [[ ! -d $(dirname $my_errfile) ]]; then logger_fatal "[createDir] Parent directory of the command line error file, $my_errfile, must exist. See Usage with --help option."; exit 1; fi	
+
+	# current directory
+	local CWD=$(pwd)
+	
+	# errfile path
+	local errDir=$(dirname $my_errfile)
+    if [[ ! -d $errDir ]]; then
+        my_cmd_err=$CWD/$my_errfile
+    fi
+
+	# run mkdir
+	local my_cli="mkdir -p $my_dirname 2>$my_errfile"
+	if [[ ! -d $my_dirname ]]; then
+		$my_cli
+		rtrn=$?
+		mkdir_failed_msg="[$my_tag] Failed. Cannot create directory named $my_dirname"
+		[[ "$rtrn" -ne 0 ]] && logger_fatal "$mkdir_failed_msg"
+		exit_on_error "$my_errfile" "$mkdir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+		[[ $my_DEBUG == "true" ]] && logger_debug "[$my_tag] OK. $my_dirname directory was created successfully. Will output all $my_tag files in this directory."
+	else
+		logger_debug "[$my_tag] OK. $my_dirname directory already exists. Will output all $my_tag files into this directory."
+	fi
+}
+
+#
 # Process management
 #
 
