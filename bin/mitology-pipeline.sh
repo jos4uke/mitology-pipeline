@@ -1416,9 +1416,6 @@ ALIGNMENTS_ERROR=$OUTPUT_DIR/$ALIGNMENTS_OUTDIR/${ALIGNMENTS_DEBUGF}.err
 #
 # cf assembly_output hash for contigs
 # cf sample_id for naming files
-# ref genomes ### TODO: move to the config file
-REF_MT="/data/SEQUENCES/GENOME/Ath-Col0-tair10-chrM/Ath-Col0-tair10-chrM.fas"
-REF_PT="/data/SEQUENCES/GENOME/Ath-Col0-tair10-chrC/Ath-Col0-tair10-chrC.fas"
 
 #
 # NUCMER
