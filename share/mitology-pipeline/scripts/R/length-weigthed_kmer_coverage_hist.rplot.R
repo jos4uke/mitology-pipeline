@@ -174,12 +174,13 @@ for ( i in 1:length(peaks$x)) {
 ## render plot	 
 pdf(file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep='')),
        onefile=TRUE,
-       title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "),
+       title=paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''),
+	   #title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram :", paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''), sep=" "),
        paper="special", height=11.7, width=16.5)
 
 p + xlab("K-mer coverage") + 
 	ylab("Length-weighted Frequency") +
-	ggtitle(paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" ")) 
+	ggtitle(paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram\n", paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''), sep=" ")) 
 
 dev.off()
 
