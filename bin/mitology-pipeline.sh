@@ -1386,16 +1386,17 @@ appender_exists assemblyDebugF && appender_close assemblyDebugF
 #
 ALIGNMENTS_OUTDIR="03.Alignments"
 logger_info "Creating $ALIGNMENTS_OUTDIR directory ..."
-if [[ -d $OUTPUT_DIR/$ALIGNMENTS_OUTDIR ]]; then
-    logger_debug "OK $ALIGNMENTS_OUTDIR directory already exists. Will output all alignments output files in this directory."
-else
-    mkdir $OUTPUT_DIR/$ALIGNMENTS_OUTDIR 2>$ERROR_TMP
-    rtrn=$?
-    out_dir_failed_msg="[$ALIGNMENTS_OUTDIR] Failed. Alignments output directory, $ALIGNMENTS_OUTDIR, was not created."
-    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
-    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
-    logger_debug "[$ALIGNMENTS_OUTDIR] OK $ALIGNMENTS_OUTDIR directory was created successfully. Will output all output files in this directory."
-fi
+#if [[ -d $OUTPUT_DIR/$ALIGNMENTS_OUTDIR ]]; then
+#    logger_debug "OK $ALIGNMENTS_OUTDIR directory already exists. Will output all alignments output files in this directory."
+#else
+#    mkdir $OUTPUT_DIR/$ALIGNMENTS_OUTDIR 2>$ERROR_TMP
+#    rtrn=$?
+#    out_dir_failed_msg="[$ALIGNMENTS_OUTDIR] Failed. Alignments output directory, $ALIGNMENTS_OUTDIR, was not created."
+#    [[ "$rtrn" -ne 0 ]] && logger_fatal "$out_dir_failed_msg"
+#    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
+#    logger_debug "[$ALIGNMENTS_OUTDIR] OK $ALIGNMENTS_OUTDIR directory was created successfully. Will output all output files in this directory."
+#fi
+createDir -n "$ALIGNMENTS_OUTDIR" -t "$ALIGNMENTS_OUTDIR" -e "$ERROR_TMP" -d
 
 ### Enable the alignments debug logger
 ALIGNMENTS_DEBUGF=${ALIGNMENTS_OUTDIR}_debug.log
