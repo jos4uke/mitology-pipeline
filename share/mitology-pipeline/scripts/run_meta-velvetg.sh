@@ -439,7 +439,7 @@ velveth_output+=( [Sequences]="Sequences" )
 declare -A velvetg_output
 velvetg_output=( [Graph2]="Graph2" )
 velvetg_output+=( [stats]="stats.txt" )
-velvetg_output+=( [weighted_hist]="length-weighted_kmer_cov_hist.rplot.pdf" )
+velvetg_output+=( [weighted_hist]="length-weighted_kmer_cov_hist.rplot_xlim_0_500.pdf" )
 declare -A metavelvetg_output 
 metavelvetg_output=( [contigs]="meta-velvetg.contigs.fa" )
 metavelvetg_output+=( [afg]="meta-velvetg.asm.afg" )
