@@ -595,7 +595,11 @@ eval "${interleaving_input}=( [R1]=${!current_sample_seq_R1_path} )"
 eval "${interleaving_input}+=( [R2]=${!current_sample_seq_R2_path} )"
 
 ### check for interleaving input sequences
-[[ "${!interleaving_input[R1_path]}" == "${!interleaving_input[R2_path]}" ]] && (logger_debug "[TEST] Interleaving error R1 == R2"; exit 1) || (logger_fatal "[TEST] Interleaving OK R1 != R2";)
+if [[ "${!current_sample_seq_R1_path}" == "${!current_sample_seq_R2_path}" ]]; then
+	logger_fatal "[TEST] Interleaving error R1 == R2"; exit 1
+else
+	logger_debug "[TEST] Interleaving OK R1 != R2"
+fi
 R1_input="${interleaving_input}[R1]"
 R2_input="${interleaving_input}[R2]"
 logger_debug "Interleaving input R1: ${!R1_input}"
