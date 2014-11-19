@@ -1568,7 +1568,27 @@ QUAST_OUTDIR=$OUTPUT_DIR/04.Statistics/$QUAST
 ## create quast output directory
 createDir -n "$QUAST_OUTDIR" -t "$QUAST_OUTDIR" -e "$ERROR_TMP" -d 
 
+### CONTIGING
+sample_dir=$(dirname ${!assembler_contigs##$OUTPUT_DIR/$ASSEMBLY_OUTDIR/})
+logger_info "$[${QUAST}_contiging] run $QUAST on ${!assembler_contigs} ... "
+for organite in mito chloro; do
+	QUAST_CONTIGING_OUTDIR=$QUAST_OUTDIR/$sample_dir/$organite/${quast_opts_sorted_cat}
+	QUAST_ERROR=$QUAST_CONTIGING_OUTDIR/${QUAST}_${organite}.err
+	case $organite in
+		chloro)
+			REF_GENOME=${ga_chloro_ref_path}
+			REF_GFF=${ga_chloro_gff_ref_path}
+			;;
+		mito)
+			REF_GENOME=${ga_mito_ref_path}
+			REF_GFF=${ga_mito_gff_ref_path}
+			;;
+	esac	
+	createDir -n "$QUAST_CONTIGING_OUTDIR" -t "${QUAST}_$organite" -e "$ERROR_TMP" -d
 
+	quast_cli="${!quast_path} -o $QUAST_CONTIGING_OUTDIR -R $REF_GENOME -G $REF_GFF ${quast_opts[@]} $(realpath ${!assembler_contigs})"
+	run_cli -c "$quast_cli" -t "${QUAST}_$organite" -e "$QUAST_ERROR" -d
+done
 
 
 
