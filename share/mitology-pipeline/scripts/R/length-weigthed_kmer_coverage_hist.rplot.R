@@ -64,6 +64,15 @@ if (is.installed('plotrix'))
 	installed.packages('plotrix');
 	suppressPackageStartupMessages(library('plotrix'));	
 }
+### ggplot2
+if (is.installed('ggplot2'))
+{
+    suppressPackageStartupMessages(require('ggplot2'));
+} else
+{
+    installed.packages('ggplot2');
+    suppressPackageStartupMessages(library('ggplot2'));
+}
 
 ## options and usage
 option_list <- list(
@@ -127,12 +136,50 @@ if (is.null(warn_err$warning) && is.null(warn_err$value$message))
 
 # outdir: ?
 outDir <- dirname(file)
-pdf(file=file.path(outDir, "length-weighted_kmer_cov_hist.rplot.pdf"),
-	   onefile=TRUE,
-	   title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "),
-	   paper="special", height=11.7, width=16.5)
+#pdf(file=file.path(outDir, "length-weighted_kmer_cov_hist.rplot.pdf"),
+#	   onefile=TRUE,
+#	   title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "),
+#	   paper="special", height=11.7, width=16.5)
 
-weighted.hist(data$short1_cov, data$lgth, breaks=seq(0, 500, by=1), xlab="K-mer coverage", ylab="Length-weighted Frequency", col=c("red"), main=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "))
+# plotrix
+#weighted.hist(data$short1_cov, data$lgth, breaks=seq(0, 500, by=1), xlab="K-mer coverage", ylab="Length-weighted Frequency", col=c("red"), main=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "))
+# ggplot2
+p <- ggplot(data=data, aes(short1_cov, weight = lgth)) 
+p <- p + geom_histogram(binwidth=1, aes(fill = ..count..)) +
+	scale_fill_gradient("Count", low = "green", high = "red") +
+	geom_density() +
+	xlim(opt$xlim_min,opt$xlim_max) ### TODO: make it an option xlim_min xlim_max
+
+## get density peaks and (x, y) coordinates
+r <- print(p)
+peakx=r$data[[2]]$x[which(diff(sign(diff(r$data[[2]]$scaled)))==-2)]
+peaks <- data.frame( x=peakx, y=r$data[[2]]$y[which(r$data[[2]]$x %in% peakx)], lgth=rep(0, length(peakx)))
+max_peaky <- max(peaks$y)
+## plot peaks as dot
+#p + geom_point(data=peaks, aes(x=x,y=y, colour="red", size=3)) + guides(colour=FALSE, size=FALSE)
+## plot x and y peaks lines and coordinates 
+for ( i in 1:length(peaks$x)) {
+	#p <- p + geom_point(aes(x=peaks$x[i], y=peaks$y[i], colour="red", size=3)) + guides(colour=FALSE, size=FALSE)
+	print(paste("Peak", i, "X:", peaks$x[i], ", Y:", peaks$y[i], sep=" "), file=stderr())
+	coordx=c(0,peaks$x[i],peaks$x[i])
+	coordy=c(peaks$y[i],peaks$y[i],0)
+	p <- p + geom_text(aes(family="Helvetica", fontface="plain", lineheight=.8), label=paste("#", i,"\n","x=", round(coordx[2],2),"\n", "y=", round(coordy[2]), sep=''), x=coordx[2], y=ifelse((coordy[2]/max_peaky)<=0.5, max_peaky/2, max_peaky*1.3), size=5, colour="black") + guides(colour=FALSE, size=FALSE)
+	p <- p + geom_text(aes(family="Helvetica", fontface="plain", lineheight=.8), label=round(coordy[1]), x=-10, y=coordy[1]*1.05, size=4, colour="red") + guides(colour=FALSE, size=FALSE)
+	p <- p + geom_text(aes(family="Helvetica", fontface="plain", lineheight=.8), label=round(coordx[2],2), x=coordx[2], y=ifelse((max_peaky*(-0.15) < -2000) && (max_peaky*(-0.15) > -2500), -2000, max_peaky*(-0.15)), size=4, colour="red") + guides(colour=FALSE, size=FALSE)
+#})	
+	#p <- p + geom_segment(aes(x=coordx[1], y=coordy[1], xend=coordx[2], yend=coordy[2], colour="red")) + guides(colour=FALSE)
+	#p <- p + geom_segment(aes(x=coordx[2], y=coordy[2], xend=coordx[3], yend=coordy[3], colour="red")) + guides(colour=FALSE)
+}
+
+## render plot	 
+pdf(file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep='')),
+       onefile=TRUE,
+       title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" "),
+       paper="special", height=11.7, width=16.5)
+
+p + xlab("K-mer coverage") + 
+	ylab("Length-weighted Frequency") +
+	ggtitle(paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram", sep=" ")) 
 
 dev.off()
 
