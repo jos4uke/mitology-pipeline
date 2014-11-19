@@ -183,6 +183,11 @@ p + xlab("K-mer coverage") +
 
 dev.off()
 
+# save peaks to file
+write.table(peaks, file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, "_density_peaks.tab",sep='')), 
+				col.names=T, row.names=T, quote=FALSE, sep="\t"
+)
+
 ## execution time: end
 T2<-Sys.time()
 Tdiff= difftime(T2, T1)
