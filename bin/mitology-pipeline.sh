@@ -1396,7 +1396,7 @@ logger_info "Creating $ALIGNMENTS_OUTDIR directory ..."
 #    exit_on_error "$ERROR_TMP" "$out_dir_failed_msg" $rtrn "" $SESSION_TAG $EMAIL
 #    logger_debug "[$ALIGNMENTS_OUTDIR] OK $ALIGNMENTS_OUTDIR directory was created successfully. Will output all output files in this directory."
 #fi
-createDir -n "$ALIGNMENTS_OUTDIR" -t "$ALIGNMENTS_OUTDIR" -e "$ERROR_TMP" -d
+createDir -n "$(realpath $OUTPUT_DIR)/$ALIGNMENTS_OUTDIR" -t "$ALIGNMENTS_OUTDIR" -e "$ERROR_TMP" -d
 
 ### Enable the alignments debug logger
 ALIGNMENTS_DEBUGF=${ALIGNMENTS_OUTDIR}_debug.log
