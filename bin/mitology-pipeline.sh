@@ -1537,7 +1537,7 @@ appender_exists alignDebugF && appender_close alignDebugF
 # 
 STATS_OUTDIR="04.Statistics"
 logger_info "Creating $STATS_OUTDIR directory ..."
-createDir -n "$STATS_OUTDIR" -t "$STATS_OUTDIR" -e "$ERROR_TMP" -d
+createDir -n "$(realpath $OUTPUT_DIR)/$STATS_OUTDIR" -t "$STATS_OUTDIR" -e "$ERROR_TMP" -d
 
 ### Enable the alignments debug logger
 STATS_DEBUGF=${STATS_OUTDIR}_debug.log
