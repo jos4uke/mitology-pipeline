@@ -172,17 +172,21 @@ for ( i in 1:length(peaks$x)) {
 }
 
 ## render plot	 
-pdf(file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep='')),
-       onefile=TRUE,
-       title=paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''),
-	   #title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram :", paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''), sep=" "),
-       paper="special", height=11.7, width=16.5)
+#pdf(file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep='')),
+#       onefile=TRUE,
+#       title=paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''),
+#	   #title=paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram :", paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''), sep=" "),
+#       paper="special", height=11.7, width=16.5)
 
 p + xlab("K-mer coverage") + 
 	ylab("Length-weighted Frequency") +
 	ggtitle(paste(strsplit(basename(file),".", fixed=TRUE)[[1]][1], "length-weigthed k-mer coverage histogram\n", paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''), sep=" ")) 
 
-dev.off()
+ggsave(p, file=paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, ".pdf", sep=''),
+	   path=outDir,
+	   height=11.7, width=16.5, unit="in")
+
+#dev.off()
 
 # save peaks to file
 write.table(peaks, file=file.path(outDir, paste(opt$prefix, "_xlim_", opt$xlim_min,"_", opt$xlim_max, "_density_peaks.tab",sep='')), 
