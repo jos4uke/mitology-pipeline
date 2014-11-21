@@ -94,7 +94,7 @@ createDir() {
 	# run mkdir
 	local my_cli="mkdir -p $my_dirname 2>$my_errfile"
 	if [[ ! -d $my_dirname ]]; then
-		$my_cli
+		eval "$my_cli"
 		rtrn=$?
 		mkdir_failed_msg="[$my_tag] Failed. Cannot create directory named $my_dirname"
 		[[ "$rtrn" -ne 0 ]] && logger_fatal "$mkdir_failed_msg"
