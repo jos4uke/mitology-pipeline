@@ -176,6 +176,8 @@ run_cli()
     local errDir=$(dirname $my_cmd_err)
     if [[ ! -d $errDir ]]; then
         my_cmd_err=$CWD/$my_cmd_err
+	else
+		my_cmd_err=$CWD/$my_cmd_err
     fi
 
 	#
