@@ -160,6 +160,9 @@ run_cli()
     # current directory
     local CWD=$(pwd)
 
+	# cli prefix to remove
+    local prefix="cd*;[[:space:]]"
+
 	# cmd/outDir
     local cmd=$(basename $(echo -e "${my_cli##$prefix}" | cut -d" " -f1))
     local outDir="$(dirname $my_cmd_err)"
@@ -285,7 +288,7 @@ run_one_cli() {
 	local CWD=$(pwd)
 
 	# cli prefix to remove
-	local prefix="cd*;[[:space:]]*"
+	local prefix="cd*;[[:space:]]"
 
 	# cmd/outDir
     local cmd=$(basename $(echo -e "${my_cli##$prefix}" | cut -d" " -f1))
