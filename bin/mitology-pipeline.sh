@@ -1435,7 +1435,7 @@ function run_nucmer() {
     echo "curDir: $CWD"
 	cd $(realpath $OUTDIR)
     nucmer --prefix=$TITLE $REF $SEQ
-    show-coords ${TITLE}.delta > ${TITLE}.coords
+    show-coords -T ${TITLE}.delta > ${TITLE}.coords
     mummerplot -l ${TITLE}.delta --small --postscript --title="$TITLE"
     show-tiling -c ${TITLE}.delta > ${TITLE}.tiling
     mv "out.ps" $TITLE.ps
