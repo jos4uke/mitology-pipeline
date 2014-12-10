@@ -252,9 +252,10 @@ if ( opt$cutoffestim ) {
 	ggsave(p3, file=paste(basename(file), "_xlims_", opt$xlim_min, "_", opt$xlim_max, "_ylims_", opt$ylim_min, "_", opt$ylim_max, "_smoothed_cutoff_", round(valleyx[1]), ".pdf", sep=''),
     	   path=outDir,
     	   height=11.7, width=16.5, unit="in")
+
 	# plot peakx
 	## plot x and y peaks lines and coordinates
-    for ( i in 1:length(peaks$x)) {
+	for ( i in 1:length(peaks$x)) {
         print(paste("Peak", i, "X:", peaks$x[i], ", Y:", peaks$y[i], sep=" "), file=stderr())
         xx=c(0,peaks$x[i],peaks$x[i])
         yy=c(peaks$y[i],peaks$y[i],0)
@@ -262,9 +263,9 @@ if ( opt$cutoffestim ) {
         p5 <- p5 + geom_text(aes(family="Helvetica", fontface="plain", lineheight=.8), label=round(yy[1]), x=ifelse(opt$xlim_max <=100, -2, -10), y=yy[1]*1.05, size=4, colour="red") + guides(colour=FALSE, size=FALSE)
         p5 <- p5 + geom_text(aes(family="Helvetica", fontface="plain", lineheight=.8), label=round(xx[2],2), x=xx[2], y=ifelse((yy[2]/max_peaky)<=.5, max_peaky*(-0.1), max_peaky*(-0.05)), size=4, colour="red") + guides(colour=FALSE, size=FALSE)
     }
-
+	
 	# render and save plot
-	ggsave(p5, file=paste(basename(file), "_xlims_", opt$xlim_min, "_", opt$xlim_max, "_ylims_", opt$ylim_min, "_", opt$ylim_max, "_smoothed_cutoff_", round(valleyx), ".pdf", sep=''),
+	ggsave(p5, file=paste(basename(file), "_xlims_", opt$xlim_min, "_", opt$xlim_max, "_ylims_", opt$ylim_min, "_", opt$ylim_max, "_smoothed_cutoff_", round(valleyx[1]), "_peaks", ".pdf", sep=''),
 		   path=outDir,
 		   height=11.7, width=16.5, unit="in")
 
