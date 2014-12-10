@@ -1286,7 +1286,8 @@ case "${!SCAFFOLDER}" in
         scaffolding_opts=($(buildCommandLineOptions "meta_velvetg" "$NAMESPACE" 2>$ASSEMBLY_ERROR))
         scaffolding_opts_sorted=($(shortenAndSortOptions "${scaffolding_opts[@]}" 2>$ASSEMBLY_ERROR))
         scaffolding_opts_sorted_cat="opts"$(echo "${scaffolding_opts_sorted[@]}" | sed -e 's/[ =]/_/g')
-        ## scaffolding outdir
+        scaffolding_opts_sorted_cat=${scaffolding_opts_sorted_cat//scaffolding_no/scaffolding_yes}
+		## scaffolding outdir
         SCAFFOLDING_OUTDIR=${OUTPUT_DIR}/${ASSEMBLY_OUTDIR}/${sample_assemblies_outdir}/${scaffolds_by}/k${!klen}/${scaffolding_opts_sorted_cat}
  
 		# define expected scaffolder output
