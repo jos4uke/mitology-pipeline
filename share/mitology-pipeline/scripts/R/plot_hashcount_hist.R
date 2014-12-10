@@ -240,11 +240,18 @@ if ( opt$cutoffestim ) {
            path=outDir,
            height=11.7, width=16.5, unit="in")
 
+	ifelse(!is.null(p1),print("p1 ok"), print("p1 not ok"))
+
 	# algo 2:
 	# 1) use the smoothed data to find the first local minimum from 0
 	# 2) plot the x coordinate and vline of the local minimum
 	p3 <- p1 + geom_vline(xintercept = valleyx, colour="blue", linetype = "longdash") +
-			 	 geom_text(aes(valleyx, 0, label = paste("cut-off=", round(valleyx,2), sep=''), hjust = -0.1), colour="blue")
+			 	 geom_text(aes(valleyx[1], 0, label = paste("cut-off=", round(valleyx[1],2), sep=''), hjust = -0.1), colour="blue")
+	
+	# render plot and save
+	ggsave(p3, file=paste(basename(file), "_xlims_", opt$xlim_min, "_", opt$xlim_max, "_ylims_", opt$ylim_min, "_", opt$ylim_max, "_smoothed_cutoff_", round(valleyx[1]), ".pdf", sep=''),
+    	   path=outDir,
+    	   height=11.7, width=16.5, unit="in")
 	# plot peakx
 	## plot x and y peaks lines and coordinates
     for ( i in 1:length(peaks$x)) {
