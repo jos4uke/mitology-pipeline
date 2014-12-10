@@ -557,7 +557,7 @@ case $SKIP_PA in
 				velveth_read_type_pe="-shortPaired" 
 				velveth_read_type_se="-short"
 				velveth_cli="${!velveth_path} $OUTPUT_DIR ${!assembly_k} ${velveth_format_type} ${velveth_read_type_pe} ${PAIRED_END}"
-				[[ -s $SINGLETONS ]] && velveth_cli+=" ${velveth_format_type_se} ${SINGLETONS}"
+				[[ -s $SINGLETONS ]] && velveth_cli+=" ${velveth_format_type} ${velveth_read_type_se} ${SINGLETONS}"
 				velveth_cli+=" ${velveth_opts_sorted[@]}"
 				#velveth_cli+=" 2>$VH_ERROR | logger_debug"
 
