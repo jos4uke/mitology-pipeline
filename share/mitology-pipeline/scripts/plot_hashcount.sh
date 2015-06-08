@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-# Joseph.Tran@versailles.inra.fr
+# author: Joseph Tran <Joseph.Tran@versailles.inra.fr>
+# license: GPL >= v3 (see mitology-pipeline/LICENSE)
+# date: 2014-10-13
 
-declare -r VERSION="dev"
+declare -r VERSION="RC1"
 
 # vars
 hashcount=$1

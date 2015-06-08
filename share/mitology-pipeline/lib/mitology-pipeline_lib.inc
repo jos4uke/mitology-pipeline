@@ -3,11 +3,12 @@
 # MITOLOGY PIPELINE FUNCTIONS LIB
 #
 # author: Joseph Tran <Joseph.Tran@versailles.inra.fr>
+# license: GPL >= v3 (see mitology-pipeline/LICENSE)
 # date: 2014-10-13
 
 # dependencies: bash-common_lib.inc 
 
-# VERSION="dev"
+# VERSION="RC1"
 
 #
 # Array utils

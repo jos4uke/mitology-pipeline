@@ -39,7 +39,7 @@
 
 # Date: 2014-09-25
 
-declare -r VERSION="dev"
+declare -r VERSION="RC1"
 
 ########################
 # SECTION CONFIGURATION

@@ -16,7 +16,7 @@
 ##
 ###############################################
 
-version <- "dev"
+version <- "RC1"
 
 ## execution time: start
 T1<-Sys.time()

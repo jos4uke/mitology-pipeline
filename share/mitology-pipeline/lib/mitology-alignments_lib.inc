@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+#
+# MITOLOGY PIPELINE FUNCTIONS LIB
+#
+# author: Joseph Tran <Joseph.Tran@versailles.inra.fr>
+# license: GPL >= v3 (see mitology-pipeline/LICENSE)
+# date: 2014-10-13
+
+# dependencies: nucmer, ps2pdf 
+
+# VERSION="RC1"
 
 #
 # Alignments 
