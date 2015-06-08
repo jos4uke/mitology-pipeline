@@ -1146,7 +1146,9 @@ case "${!ASSEMBLER}" in
 		klen="${assembly_input}[k]"
 		## build contiging options
 		# use meta_velvetg as written in the config file not meta-velevetg, the actual assembler name, because config parser does not allow hyphen in section name
+		#eval "declare -A contiging_opts"
 		contiging_opts=($(buildCommandLineOptions "meta_velvetg" "$NAMESPACE" 2>$ASSEMBLY_ERROR))
+		#eval "contiging_opts+=( --scaffolding=no )"
 		contiging_opts_sorted=($(shortenAndSortOptions "${contiging_opts[@]}" 2>$ASSEMBLY_ERROR))
 		contiging_opts_sorted_cat="opts"$(echo "${contiging_opts_sorted[@]}" | sed -e 's/[ =]/_/g')
 		## contiging outdir
