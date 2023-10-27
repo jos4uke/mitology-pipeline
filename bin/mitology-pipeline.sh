@@ -132,12 +132,9 @@ printf %s "\
 Program: $(basename $0)
 Version: $VERSION
 
-Copyright 2014 Joseph Tran <Joseph.Tran@versailles.inra.fr>
-
-Licensed under the CeCILL License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+Copyright (C) 2014 INRAE 
+Author: Joseph Tran <joseph.tran@inrae.fr>
+License: GPL-3.0-only ou GPL-3.0-or-later
 
 Usage: $(basename $0) -c|--configfile CONFIG_FILE -o|--out_dir OUTPUT_DIR [-A|--assembler ASSEMBLER] [-S|--scaffolder SCAFFOLDER] [-d|--debug] [-C|--kmer_abund_cutoff INT] [-e|--email_address VALID_EMAIL_ADDR]
 
