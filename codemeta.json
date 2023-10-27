@@ -1,0 +1,62 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/GPL-3.0-or-later",
+    "codeRepository": "https://github.com/jos4uke/mitology-pipeline.git",
+    "dateCreated": "2014-09-25",
+    "datePublished": "2014-09-25",
+    "dateModified": "2014-09-25",
+    "downloadUrl": "https://github.com/jos4uke/mitology-pipeline/archive/refs/heads/master.zip",
+    "issueTracker": "https://github.com/jos4uke/mitology-pipeline/issues",
+    "name": "mitology-pipeline",
+    "version": "RC1",
+    "description": "mitology-pipeline\n\nPipeline for plant organites (chloroplast and mitochondrion) assembly\n",
+    "applicationCategory": "Bioinformatics",
+    "funding": "GRANT: ANR BIOADAPT CYTOPHENO 2012",
+    "developmentStatus": "unsupported",
+    "funder": {
+        "@type": "Organization",
+        "name": "ANR"
+    },
+    "keywords": [
+        "\"Arabidopsis thaliana\" \"plant organites\" mitochondrion chloroplast \"genome assembly\" \"illumina short-read sequencing\" pipeline"
+    ],
+    "programmingLanguage": [
+        "bash",
+        "R"
+    ],
+    "operatingSystem": [
+        "Linux"
+    ],
+    "softwareRequirements": [
+        "The following dependencies need to be installed manually:",
+        "* [bash-common](https://github.com/jos4uke/bash-common.git)",
+        "* [log4sh](https://github.com/kward/log4sh)",
+        "",
+        "The following dependencies can be installed using [conda](https://docs.conda.io/projects/miniconda/en/latest/) (recommended):",
+        "* [bgzip](http://www.htslib.org/)",
+        "* [bwa](https://github.com/lh3/bwa)",
+        "* [bcftools](http://www.htslib.org/)",
+        "* [khmer](https://github.com/dib-lab/khmer)",
+        "* [MetaVelvet](http://metavelvet.dna.bio.keio.ac.jp/)",
+        "* [Velvet](https://github.com/dzerbino/velvet)",
+        "* [nucmer](https://github.com/mummer4/mummer)",
+        "* [quast](https://github.com/ablab/quast)",
+        "* [samtools](http://www.htslib.org/)",
+        "* [tabix](http://www.htslib.org/)",
+        ""
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-4624-0363",
+            "givenName": "Joseph",
+            "familyName": "Tran",
+            "email": "joseph.tran@inrae.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": " UMR1287 EGFV Ecophysiologie et Génomique Fonctionnelle de la Vigne , INRAE"
+            }
+        }
+    ]
+}
