@@ -63,7 +63,7 @@ WAITALL_DELAY=60
 
 # load log4sh (disabling properties file warning) and clear the default
 # configuration
-LOG4SH_CONFIGURATION='none' . /usr/local/share/log4sh/build/log4sh 2>/dev/null
+LOG4SH_CONFIGURATION='none' . /usr/local/share/log4sh/log4sh 2>/dev/null
 [[ $? != 0 ]] && $(echo "Error loading log4sh lib" >&2; exit 1)
 log4sh_resetConfiguration
 
