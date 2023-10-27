@@ -1,14 +1,31 @@
 #!/usr/bin/env Rscript
 
-## Copyright (c) 2014 by Joseph Tran. This work is made available under the terms of the Creative Commons Attribution-ShareAlike 3.0 license, http://creativecommons.org/licenses/by-sa/3.0/.
+# Copyright (C) 2014 INRAE
+
+# author: Joseph Tran <joseph.tran@inrae.fr>
+
+# This file is part of mitology-pipeline.
+
+# mitology-pipeline is free software: you can redistribute it   
+# and/or modify it under the terms of the GNU General Public License as  
+# published by the Free Software Foundation, either version 3 of  
+# the License, or (at your option) any later version.  
+#  
+# mitology-pipeline is distributed in the hope that it will be useful,  
+# but WITHOUT ANY WARRANTY; without even the implied warranty of  
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
+# GNU General Public License for more details.  
+#  
+# You should have received a copy of the GNU General Public Licence  
+# along with mitology-pipeline. If not, see <https://www.gnu.org/licenses/>  
 
 ################################################
 ##
 ## @script: plot_hashcount_hist.R
 ##
-## @author: Joseph Tran (Joseph.Tran@versailles.inra.fr)
+## @author: Joseph Tran (joseph.tran@inrae.fr)
 ##
-## @version: dev
+## @version: RC1
 ##
 ## @date: 2014-11-20
 ##
